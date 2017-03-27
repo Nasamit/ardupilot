@@ -69,6 +69,10 @@ LIBTOKENS += \
 	AP_HAL_QURT
 endif
 
+ifeq ($(HAL_BOARD),HAL_BOARD_86DUINO)
+LIBTOKENS += \
+	AP_HAL_86Duino
+endif
 #
 # Find sketchbook libraries referenced by the sketch.
 #

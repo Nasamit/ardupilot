@@ -1,7 +1,5 @@
 #pragma once
-
 #include_next <cmath>
-
 #ifndef WAF_BUILD
 #  ifdef __GLIBC__
 #    if __GLIBC_PREREQ(2, 23)
@@ -39,4 +37,13 @@ using std::isinf;
 
 #if defined(HAVE_CMATH_ISNAN) && defined(NEED_CMATH_ISNAN_STD_NAMESPACE)
 using std::isnan;
+#endif
+
+#if defined(__86DUINO__)
+//#define fmaxf(__x, __y) __builtin_fmaxf(__x, __y)
+inline float fmaxf( float x, float y )
+{
+//    return ( __builtin_fmaxf(x, y) );
+    return (x > y ? x : y) ;
+};
 #endif

@@ -94,6 +94,9 @@ qurt: HAL_BOARD = HAL_BOARD_QURT
 qurt: TOOLCHAIN = QURT
 qurt: all
 
+86duino: HAL_BOARD = HAL_BOARD_86DUINO
+86duino: TOOLCHAIN = 86DUINO
+86duino: all
 # cope with HIL targets
 %-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
 %-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "

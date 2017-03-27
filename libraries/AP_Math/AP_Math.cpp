@@ -31,6 +31,7 @@ is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
     return fabsf(v_1 - v_2) < std::numeric_limits<float>::epsilon();
 }
 
+template bool is_equal<long int>(const long int v_1, const long int v_2);
 template bool is_equal<int>(const int v_1, const int v_2);
 template bool is_equal<short>(const short v_1, const short v_2);
 template bool is_equal<float>(const float v_1, const float v_2);
@@ -52,6 +53,7 @@ float safe_asin(const T v)
     return asinf(f);
 }
 
+template float safe_asin<long int>(const long int v);
 template float safe_asin<int>(const int v);
 template float safe_asin<short>(const short v);
 template float safe_asin<float>(const float v);
@@ -67,6 +69,7 @@ float safe_sqrt(const T v)
     return ret;
 }
 
+template float safe_sqrt<long int>(const long int v);
 template float safe_sqrt<int>(const int v);
 template float safe_sqrt<short>(const short v);
 template float safe_sqrt<float>(const float v);
@@ -99,6 +102,7 @@ float wrap_180(const T angle, float unit_mod)
     return res;
 }
 
+template float wrap_180<long int>(const long int angle, float unit_mod);    // mod
 template float wrap_180<int>(const int angle, float unit_mod);
 template float wrap_180<short>(const short angle, float unit_mod);
 template float wrap_180<float>(const float angle, float unit_mod);
@@ -110,6 +114,7 @@ auto wrap_180_cd(const T angle) -> decltype(wrap_180(angle, 100.f))
     return wrap_180(angle, 100.f);
 }
 
+template auto wrap_180_cd<long int>(const long int angle) -> decltype(wrap_180(angle, 100.f));
 template auto wrap_180_cd<float>(const float angle) -> decltype(wrap_180(angle, 100.f));
 template auto wrap_180_cd<int>(const int angle) -> decltype(wrap_180(angle, 100.f));
 template auto wrap_180_cd<short>(const short angle) -> decltype(wrap_180(angle, 100.f));
@@ -126,6 +131,7 @@ float wrap_360(const T angle, float unit_mod)
     return res;
 }
 
+template float wrap_360<long int>(const long int angle, float unit_mod);
 template float wrap_360<int>(const int angle, float unit_mod);
 template float wrap_360<short>(const short angle, float unit_mod);
 template float wrap_360<float>(const float angle, float unit_mod);
@@ -137,6 +143,7 @@ auto wrap_360_cd(const T angle) -> decltype(wrap_360(angle, 100.f))
     return wrap_360(angle, 100.f);
 }
 
+template auto wrap_360_cd<long int>(const long int angle) -> decltype(wrap_360(angle, 100.f));
 template auto wrap_360_cd<float>(const float angle) -> decltype(wrap_360(angle, 100.f));
 template auto wrap_360_cd<int>(const int angle) -> decltype(wrap_360(angle, 100.f));
 template auto wrap_360_cd<short>(const short angle) -> decltype(wrap_360(angle, 100.f));
@@ -152,6 +159,7 @@ float wrap_PI(const T radian)
     return res;
 }
 
+template float wrap_PI<long int>(const long int radian);
 template float wrap_PI<int>(const int radian);
 template float wrap_PI<short>(const short radian);
 template float wrap_PI<float>(const float radian);
@@ -167,6 +175,7 @@ float wrap_2PI(const T radian)
     return res;
 }
 
+template float wrap_2PI<long int>(const long int radian);
 template float wrap_2PI<int>(const int radian);
 template float wrap_2PI<short>(const short radian);
 template float wrap_2PI<float>(const float radian);
@@ -193,6 +202,7 @@ T constrain_value(const T amt, const T low, const T high)
     return amt;
 }
 
+template long int constrain_value<long int>(const long int amt, const long int low, const long int high);
 template int constrain_value<int>(const int amt, const int low, const int high);
 template short constrain_value<short>(const short amt, const short low, const short high);
 template float constrain_value<float>(const float amt, const float low, const float high);

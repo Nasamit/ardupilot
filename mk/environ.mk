@@ -4,6 +4,7 @@
 #
 SYSTYPE			:=	$(shell uname)
 
+
 GIT_VERSION ?= $(shell git rev-parse HEAD | cut -c1-8)
 EXTRAFLAGS += -DGIT_VERSION="\"$(GIT_VERSION)\""
 
@@ -220,6 +221,11 @@ endif
 ifneq ($(findstring pxfmini, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_PXFMINI
+endif
+
+ifneq ($(findstring 86duino, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_86DUINO
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 # default to SITL
