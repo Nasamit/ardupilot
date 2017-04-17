@@ -18,7 +18,7 @@ export LANG=C
 # Locate the sketch sources based on the initial Makefile's path
 #
 SRCROOT			:=	$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
-ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)    
   # Workaround a $(realpath ) bug on cygwin
   ifeq ($(SRCROOT),)
     SRCROOT	:=	$(shell cygpath -m ${CURDIR})
@@ -98,7 +98,7 @@ BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
 endif
 
 ifeq ($(BUILDROOT),)
-BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).build)
+BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).b)
 endif
 
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)

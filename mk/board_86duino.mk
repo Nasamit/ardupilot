@@ -90,7 +90,7 @@ LIBOBJS			:=	$(SKETCHLIBOBJS)
 #
 
 # The ELF file
-SKETCHELF		=	$(BUILDROOT)/$(SKETCH).elf
+SKETCHELF		=	$(BUILDROOT)/$(SKETCH).exe
 BUILDELF                =       $(notdir $(SKETCHELF))
 
 # HEX file
@@ -116,6 +116,10 @@ all: $(SKETCHELF)
 
 print-%:
 	echo "$*=$($*)"
+
+upload:
+	upx $(SKETCH).exe
+	v86dude com5 20 $(SKETCH).exe standalone
 
 ################################################################################
 # Rules

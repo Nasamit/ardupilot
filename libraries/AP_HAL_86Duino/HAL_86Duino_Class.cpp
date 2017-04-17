@@ -2,12 +2,14 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_86DUINO
 
+#include <stdio.h>
 //#include <assert.h>
+
 
 //#include "AP_HAL_SITL.h"
 //#include "AP_HAL_SITL_Namespace.h"
 #include "HAL_86Duino_Class.h"
-//#include "Scheduler.h"
+#include "Scheduler.h"
 //#include "AnalogIn.h"
 //#include "UARTDriver.h"
 //#include "Storage.h"
@@ -16,15 +18,16 @@
 //#include "GPIO.h"
 //#include "SITL_State.h"
 //#include "Util.h"
+#include "USBSerial.h"
 
 //#include <AP_HAL_Empty/AP_HAL_Empty.h>
 //#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
-//using namespace HALSITL;
+using namespace x86Duino;
 
 //static EEPROMStorage sitlEEPROMStorage;
 //static SITL_State sitlState;
-//static Scheduler sitlScheduler(&sitlState);
+static Scheduler x86Scheduler;
 //static RCInput  sitlRCInput(&sitlState);
 //static RCOutput sitlRCOutput(&sitlState);
 //static AnalogIn sitlAnalogIn(&sitlState);
@@ -42,11 +45,13 @@
 //static UARTDriver sitlUart4Driver(4, &sitlState);
 //static UARTDriver sitlUart5Driver(5, &sitlState);
 
+static USBSerial usbUart;
+
 //static Util utilInstance(&sitlState);
 
 HAL_86Duino::HAL_86Duino() :
     AP_HAL::HAL(
-        nullptr,   /* uartA */
+        &usbUart,   /* uartA */
         nullptr,   /* uartB */
         nullptr,   /* uartC */
         nullptr,   /* uartD */
@@ -56,11 +61,11 @@ HAL_86Duino::HAL_86Duino() :
         nullptr,          /* spi */
         nullptr,      /* analogin */
         nullptr, /* storage */
-        nullptr,   /* console */
+        &usbUart,   /* console */
         nullptr,          /* gpio */
         nullptr,       /* rcinput */
         nullptr,      /* rcoutput */
-        nullptr,     /* scheduler */
+        &x86Scheduler,     /* scheduler */
         nullptr,      /* util */
         nullptr) /* onboard optical flow */
 //        &sitlUart0Driver,   /* uartA */
@@ -85,6 +90,7 @@ HAL_86Duino::HAL_86Duino() :
 
 void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
+    printf("Hello ArduPlot!!\n");   // @nasamit
 //    assert(callbacks);
 
 //    _sitl_state->init(argc, argv);
@@ -100,9 +106,11 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //    callbacks->setup();
 //    scheduler->system_initialized();
 
-//    for (;;) {
+    for (;;) {
+        x86Scheduler.delay(100);
+        usbUart.printf("ms:%d\n", AP_HAL::millis());    // @nasamit
 //        callbacks->loop();
-//    }
+    }
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {

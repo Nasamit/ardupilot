@@ -64,21 +64,23 @@ ZYNQ_GDB     :=  arm-xilinx-linux-gnueabi-gdb
 ZYNQ_OBJCOPY :=  arm-xilinx-linux-gnueabi-objcopy
 
 # toolchains for 86duino
-#86DUINO_CXX     :=  i586-pc-msdosdjgpp-g++
-#86DUINO_CC      :=  i586-pc-msdosdjgpp-gcc
-#86DUINO_AS      :=  i586-pc-msdosdjgpp-gcc
-#86DUINO_AR      :=  i586-pc-msdosdjgpp-ar
-#86DUINO_LD      :=  i586-pc-msdosdjgpp-g++
-#86DUINO_GDB     :=  gdb
-#86DUINO_OBJCOPY :=  i586-pc-msdosdjgpp-objcopy
-
-86DUINO_CXX     :=  g++
-86DUINO_CC      :=  gcc
-86DUINO_AS      :=  gcc
-86DUINO_AR      :=  ar
-86DUINO_LD      :=  g++
-86DUINO_GDB     :=  gdb
-86DUINO_OBJCOPY :=  objcopy
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+    86DUINO_CXX     :=  i586-pc-msdosdjgpp-g++
+    86DUINO_CC      :=  i586-pc-msdosdjgpp-gcc
+    86DUINO_AS      :=  i586-pc-msdosdjgpp-gcc
+    86DUINO_AR      :=  i586-pc-msdosdjgpp-ar
+    86DUINO_LD      :=  i586-pc-msdosdjgpp-g++
+    86DUINO_GDB     :=  gdb
+    86DUINO_OBJCOPY :=  i586-pc-msdosdjgpp-objcopy
+else
+    86DUINO_CXX     :=  g++
+    86DUINO_CC      :=  gcc
+    86DUINO_AS      :=  gcc
+    86DUINO_AR      :=  ar
+    86DUINO_LD      :=  g++
+    86DUINO_GDB     :=  gdb
+    86DUINO_OBJCOPY :=  objcopy
+endif
 
 # enable ccache if installed
 CCACHE :=  $(call FIND_TOOL,ccache)

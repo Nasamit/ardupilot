@@ -4,6 +4,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 
+#include "io.h"
+
 extern const AP_HAL::HAL& hal;
 
 namespace AP_HAL {
@@ -38,8 +40,9 @@ uint32_t millis()
 
 uint64_t micros64()
 {
-//    return hrt_absolute_time();
-    return 100000;
+    uint64_t nowclocks;
+    __asm__ __volatile__ ("rdtsc" : "=A"(nowclocks) );
+    return nowclocks/vx86_CpuCLK();
 }
 
 uint64_t millis64()
