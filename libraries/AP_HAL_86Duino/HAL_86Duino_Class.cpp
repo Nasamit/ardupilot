@@ -11,7 +11,7 @@
 #include "HAL_86Duino_Class.h"
 #include "Scheduler.h"
 //#include "AnalogIn.h"
-//#include "UARTDriver.h"
+#include "UARTDriver.h"
 //#include "Storage.h"
 //#include "RCInput.h"
 //#include "RCOutput.h"
@@ -38,13 +38,10 @@ static Scheduler x86Scheduler;
 //static Empty::SPIDeviceManager emptySPI;
 //static Empty::OpticalFlow emptyOpticalFlow;
 
-//static UARTDriver sitlUart0Driver(0, &sitlState);
-//static UARTDriver sitlUart1Driver(1, &sitlState);
-//static UARTDriver sitlUart2Driver(2, &sitlState);
-//static UARTDriver sitlUart3Driver(3, &sitlState);
-//static UARTDriver sitlUart4Driver(4, &sitlState);
-//static UARTDriver sitlUart5Driver(5, &sitlState);
-
+static UARTDriver Serial1(COM1, 115200L, BYTESIZE8|NOPARITY|STOPBIT1, 0L, 500L);
+static UARTDriver Serial2(COM2, 115200L, BYTESIZE8|NOPARITY|STOPBIT1, 0L, 500L);
+static UARTDriver Serial3(COM3, 115200L, BYTESIZE8|NOPARITY|STOPBIT1, 0L, 500L);
+static UARTDriver Serial485(COM4, 115200L, BYTESIZE8|NOPARITY|STOPBIT1, 0L, 500L);
 static USBSerial usbUart;
 
 //static Util utilInstance(&sitlState);
@@ -52,10 +49,10 @@ static USBSerial usbUart;
 HAL_86Duino::HAL_86Duino() :
     AP_HAL::HAL(
         &usbUart,   /* uartA */
-        nullptr,   /* uartB */
-        nullptr,   /* uartC */
-        nullptr,   /* uartD */
-        nullptr,   /* uartE */
+        &Serial1,   /* uartB */
+        &Serial2,   /* uartC */
+        &Serial3,   /* uartD */
+        &Serial485,   /* uartE */
         nullptr,   /* uartF */
         nullptr,
         nullptr,          /* spi */
@@ -106,9 +103,11 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //    callbacks->setup();
 //    scheduler->system_initialized();
 
+    Serial1.begin(115200);
+
     for (;;) {
         x86Scheduler.delay(100);
-        usbUart.printf("ms:%d\n", AP_HAL::millis());    // @nasamit
+        Serial1.printf("ms:%d\n", AP_HAL::millis());    // @nasamit
 //        callbacks->loop();
     }
 }
