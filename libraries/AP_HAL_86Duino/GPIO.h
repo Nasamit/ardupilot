@@ -6,21 +6,22 @@ class x86Duino::GPIO : public AP_HAL::GPIO {
 public:
     GPIO();
     void    init();
-    void    pinMode(uint8_t pin, uint8_t output);
-    int8_t  analogPinToDigitalPin(uint8_t pin);
+    void    pinMode(uint8_t pin, uint8_t mode);
+    int8_t  analogPinToDigitalPin(uint8_t pin); // empty implement
     uint8_t read(uint8_t pin);
-    void    write(uint8_t pin, uint8_t value);
+    void    write(uint8_t pin, uint8_t val);
     void    toggle(uint8_t pin);
 
     /* Alternative interface: */
     AP_HAL::DigitalSource* channel(uint16_t n);
 
-    /* Interrupt interface: */
+    /* Interrupt interface: */ // empty implement
     bool    attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
             uint8_t mode);
 
     /* return true if USB cable is connected */
     bool    usb_connected(void);
+    void    setPinStatus();
 };
 
 class x86Duino::DigitalSource : public AP_HAL::DigitalSource {

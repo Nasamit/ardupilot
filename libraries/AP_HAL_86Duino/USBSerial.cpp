@@ -121,6 +121,14 @@ int USBSerial::peek(void)
     }
 }
 
+bool USBSerial::isConnected()
+{
+    // return ture if CDC is connected!
+    if(USBDEV == NULL) return false;
+    if( usb_State(USBDEV) == USB_DEV_CDC_CONNECT ) return true;
+    return false;
+}
+
 
 USBSerial::operator bool() {
 	bool result = false;

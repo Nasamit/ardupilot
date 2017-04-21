@@ -3,25 +3,27 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_86DUINO
 
 #include <stdio.h>
-//#include <assert.h>
+#include <assert.h>
 
 
 //#include "AP_HAL_SITL.h"
 //#include "AP_HAL_SITL_Namespace.h"
 #include "HAL_86Duino_Class.h"
 #include "Scheduler.h"
-//#include "AnalogIn.h"
+#include "AnalogIn.h"
 #include "UARTDriver.h"
 //#include "Storage.h"
 //#include "RCInput.h"
 //#include "RCOutput.h"
-//#include "GPIO.h"
+#include "GPIO.h"
 //#include "SITL_State.h"
 //#include "Util.h"
 #include "USBSerial.h"
 
 //#include <AP_HAL_Empty/AP_HAL_Empty.h>
 //#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include "io.h"
+#include "pins_arduino.h"
 
 using namespace x86Duino;
 
@@ -30,8 +32,8 @@ using namespace x86Duino;
 static Scheduler x86Scheduler;
 //static RCInput  sitlRCInput(&sitlState);
 //static RCOutput sitlRCOutput(&sitlState);
-//static AnalogIn sitlAnalogIn(&sitlState);
-//static GPIO sitlGPIO(&sitlState);
+static AnalogIn x86AnalogIn;
+static GPIO x86GPIO;
 
 //// use the Empty HAL for hardware we don't emulate
 //static Empty::I2CDeviceManager i2c_mgr_instance;
@@ -56,10 +58,10 @@ HAL_86Duino::HAL_86Duino() :
         nullptr,   /* uartF */
         nullptr,
         nullptr,          /* spi */
-        nullptr,      /* analogin */
+        &x86AnalogIn,      /* analogin */
         nullptr, /* storage */
         &usbUart,   /* console */
-        nullptr,          /* gpio */
+        &x86GPIO,          /* gpio */
         nullptr,       /* rcinput */
         nullptr,      /* rcoutput */
         &x86Scheduler,     /* scheduler */
@@ -85,10 +87,70 @@ HAL_86Duino::HAL_86Duino() :
 //    _sitl_state(&sitlState)
 {}
 
+unsigned long CLOCKS_PER_MICROSEC = 300L; // The default value is 300Mhz for 86Duino, you should call init() to set it automatically.
+unsigned long VORTEX86EX_CLOCKS_PER_MS = 300000L; // The default value is 300000 for 86Duino, you should call init() to set it automatically.
+
 void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     printf("Hello ArduPlot!!\n");   // @nasamit
-//    assert(callbacks);
+    assert(callbacks);
+
+//    int i, crossbarBase, gpioBase;
+//    if(io_Init() == false) return;
+//    timer_NowTime(); // initialize timer
+//    CLOCKS_PER_MICROSEC = vx86_CpuCLK();
+//    VORTEX86EX_CLOCKS_PER_MS = CLOCKS_PER_MICROSEC*1000UL;
+
+//    // Set IRQ4 as level-trigger
+//    io_outpb(0x4D0, io_inpb(0x4D0) | 0x10);
+
+//    //set corssbar Base Address
+//    crossbarBase = sb_Read16(SB_CROSSBASE) & 0xfffe;
+//    if(crossbarBase == 0 || crossbarBase == 0xfffe)
+//    {
+//        sb_Write16(SB_CROSSBASE, CROSSBARBASE | 0x01);
+//        crossbarBase = CROSSBARBASE;
+//    }
+
+//#if defined CRB_DEBUGMODE
+//    for(i=0; i<CRBTABLE_SIZE; i++) io_outpb(crossbarBase+i, CROSSBARTABLE[i]);
+//#endif
+
+//    // Force set HIGH speed ISA on SB
+//    sb_Write(SB_FCREG, sb_Read(SB_FCREG) | 0x8000C000L);
+
+    // GPIO->init
+    x86GPIO.init();
+
+    // AD->init
+    x86AnalogIn.init();
+
+//    // set MCM Base Address
+//    set_MMIO();
+//    mcmInit();
+//    for(i=0; i<4; i++)
+//        mc_SetMode(i, MCMODE_PWM_SIFB);
+
+//    // init wdt1
+//    wdt_init();
+
+//    if(Global_irq_Init == false)
+//    {
+//        // set MCM IRQ
+//        if(irq_Init() == false)
+//        {
+//            printf("MCM IRQ init fail\n"); return false;
+//        }
+
+//        if(irq_Setting(GetMCIRQ(), IRQ_LEVEL_TRIGGER + IRQ_DISABLE_INTR) == false)
+//        {
+//            printf("MCM IRQ Setting fail\n"); return false;
+//        }
+//        Set_MCIRQ(GetMCIRQ());
+//        Global_irq_Init = true;
+//    }
+
+//    // USB-CDC init()
 
 //    _sitl_state->init(argc, argv);
 //    scheduler->init();
@@ -104,10 +166,16 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //    scheduler->system_initialized();
 
     Serial1.begin(115200);
+    x86GPIO.pinMode(13, HAL_GPIO_OUTPUT);
+    Serial1.printf("usb:%s\n", x86GPIO.usb_connected()? "connected" : "not connect");    // @nasamit
 
     for (;;) {
         x86Scheduler.delay(100);
-        Serial1.printf("ms:%d\n", AP_HAL::millis());    // @nasamit
+//        Serial1.printf("ms:%d, usb:%s\n", AP_HAL::millis(), x86GPIO.usb_connected()? "connected" : "not connect");    // @nasamit
+//        Serial1.printf("ms:%d, ch:%d, value:%d\n", AP_HAL::millis(), x86AnalogIn.channel(1)->read_latest(),
+//                       x86AnalogIn.channel(0)->read_latest());    // @nasamit
+        x86GPIO.toggle(13);
+        x86AnalogIn.update();
 //        callbacks->loop();
     }
 }

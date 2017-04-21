@@ -24,7 +24,8 @@ public:
     size_t write(const uint8_t *buffer, size_t size);
 
     // 86duino additional API
-    virtual int peek(void);
+    int peek(void);
+    bool isConnected(void);
     operator bool();
 
 private:
