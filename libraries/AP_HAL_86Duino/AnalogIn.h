@@ -70,4 +70,5 @@ public:
     void update();     // must called in timer loop to sample data
 private:
     x86Duino::AnalogSource* _channel[ANALOG_MAX_CHANNELS] ;
+    uint32_t    AD_State;
 };

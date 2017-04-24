@@ -9,6 +9,9 @@ using namespace x86Duino;
 #define MCM_MD      (1)
 #define ADC_RESOLUTION    (2048) // for 86Duino, 11bits
 
+#define AD_START    0
+#define AD_READ     1
+
 extern const AP_HAL::HAL& hal ;
 
 AnalogSource::AnalogSource(uint8_t p)
@@ -78,6 +81,7 @@ void AnalogSource::set_settle_time(uint16_t settle_time_ms)
 
 AnalogIn::AnalogIn()
 {
+    AD_State = AD_START;
     for(int i = 0 ; i < ANALOG_MAX_CHANNELS ; i++ )
     {
         _channel[i] = new x86Duino::AnalogSource(i);
@@ -97,40 +101,50 @@ void AnalogIn::init()
 void AnalogIn::update()
 {
     unsigned long d, t;
+//    static int count = 0 ;
 
-    io_DisableINT();
-
-    io_outpb(BaseAddress + 1, 0x08); // disable ADC
-    io_outpb(BaseAddress + 0, 0x7F); // ch 0~6
-    io_outpb(BaseAddress + 1, 0x01); // enable ADC_ST
-    for(t=timer_NowTime();(io_inpb(BaseAddress + 2) & 0x01) == 0;)
+    switch( AD_State )
     {
-        if((timer_NowTime() - t) >= 1000L)
+    default:
+    case AD_START:  // set AD start sample
+        io_DisableINT();
+
+        io_outpb(BaseAddress + 1, 0x08); // disable ADC
+        io_outpb(BaseAddress + 0, 0x7F); // ch 0~6
+        io_outpb(BaseAddress + 1, 0x01); // enable ADC_ST
+
+        io_RestoreINT();
+        AD_State = AD_READ;
+        break;
+
+    case AD_READ:   // read AD value
+        if( (io_inpb(BaseAddress + 2) & 0x01) == 0) break;  // not ready!
+
+//        count++;
+        for( int i = 0; i<ANALOG_MAX_CHANNELS ; i++)
         {
-            io_RestoreINT();
-            return ;
+            d = io_inpw(BaseAddress + 4);
+            int16_t ad = d & 0x07FF;
+            int16_t ch = (d & 0xE000)>>13;
+            for( int j = 0; j<ANALOG_MAX_CHANNELS ; j++)
+            {
+                x86Duino::AnalogSource *c = _channel[j];
+                if( c->_pin == ch ) c->_add_value(ad);
+            }
         }
+        AD_State = AD_START;
+        break;
     }
 
-    for( int i = 0; i<ANALOG_MAX_CHANNELS ; i++)
+    static uint32_t print_time = AP_HAL::millis();
+    if( AP_HAL::millis() - print_time > 100)
     {
-        d = io_inpw(BaseAddress + 4);
-        int16_t ad = d & 0x07FF;
-        int16_t ch = (d & 0xE000)>>13;
-        for( int j = 0; j<ANALOG_MAX_CHANNELS ; j++)
-        {
-            x86Duino::AnalogSource *c = _channel[j];
-            if( c->_pin == ch ) c->_add_value(ad);
-        }
+//        hal.uartB->printf("ms:%d, ch:%d, value:%d\n", AP_HAL::millis(), ch , ad);    // @nasamit
+        hal.uartB->printf("ms:%d, ch_0:%4.2f, ch_1:%4.2f, ch_2:%4.2f, ch_3:%4.2f, ch_4:%4.2f, ch_5:%4.2f, ch_6:%4.2f, \n"
+                          , AP_HAL::millis(), _channel[0]->voltage_average() , _channel[1]->voltage_average(), _channel[2]->voltage_average(),
+                _channel[3]->voltage_average(), _channel[4]->voltage_average(), _channel[5]->voltage_average(), _channel[6]->voltage_average());    // @nasamit
+        print_time = AP_HAL::millis() ;
     }
-
-//    hal.uartB->printf("ms:%d, ch:%d, value:%d\n", AP_HAL::millis(), ch , ad);    // @nasamit
-//    hal.uartB->printf("ms:%d, ch_0:%4.2f, ch_1:%4.2f, ch_2:%4.2f, ch_3:%4.2f, ch_4:%4.2f, ch_5:%4.2f, ch_6:%4.2f, \n"
-//            , AP_HAL::millis(), _channel[0]->voltage_latest() , _channel[1]->voltage_latest(), _channel[2]->voltage_latest(),
-//            _channel[3]->voltage_latest(), _channel[4]->voltage_latest(), _channel[5]->voltage_latest(), _channel[6]->voltage_latest());    // @nasamit
-
-    io_RestoreINT();
-
 }
 
 AP_HAL::AnalogSource* AnalogIn::channel(int16_t n)

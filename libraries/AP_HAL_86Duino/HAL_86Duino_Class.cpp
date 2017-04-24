@@ -169,12 +169,13 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     x86GPIO.pinMode(13, HAL_GPIO_OUTPUT);
     Serial1.printf("usb:%s\n", x86GPIO.usb_connected()? "connected" : "not connect");    // @nasamit
 
+
     for (;;) {
-        x86Scheduler.delay(100);
+//        x86Scheduler.delay(100);
 //        Serial1.printf("ms:%d, usb:%s\n", AP_HAL::millis(), x86GPIO.usb_connected()? "connected" : "not connect");    // @nasamit
 //        Serial1.printf("ms:%d, ch:%d, value:%d\n", AP_HAL::millis(), x86AnalogIn.channel(1)->read_latest(),
 //                       x86AnalogIn.channel(0)->read_latest());    // @nasamit
-        x86GPIO.toggle(13);
+//        x86GPIO.toggle(13);
         x86AnalogIn.update();
 //        callbacks->loop();
     }
