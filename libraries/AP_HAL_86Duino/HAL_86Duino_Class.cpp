@@ -13,8 +13,8 @@
 #include "AnalogIn.h"
 #include "UARTDriver.h"
 //#include "Storage.h"
-//#include "RCInput.h"
-//#include "RCOutput.h"
+#include "RCInput.h"
+#include "RCOutput.h"
 #include "GPIO.h"
 //#include "SITL_State.h"
 //#include "Util.h"
@@ -23,6 +23,7 @@
 //#include <AP_HAL_Empty/AP_HAL_Empty.h>
 //#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include "io.h"
+#include "irq.h"
 #include "pins_arduino.h"
 
 using namespace x86Duino;
@@ -30,8 +31,8 @@ using namespace x86Duino;
 //static EEPROMStorage sitlEEPROMStorage;
 //static SITL_State sitlState;
 static Scheduler x86Scheduler;
-//static RCInput  sitlRCInput(&sitlState);
-//static RCOutput sitlRCOutput(&sitlState);
+static RCInput  x86RCInput;
+static RCOutput x86RCOutput;
 static AnalogIn x86AnalogIn;
 static GPIO x86GPIO;
 
@@ -62,8 +63,8 @@ HAL_86Duino::HAL_86Duino() :
         nullptr, /* storage */
         &usbUart,   /* console */
         &x86GPIO,          /* gpio */
-        nullptr,       /* rcinput */
-        nullptr,      /* rcoutput */
+        &x86RCInput,       /* rcinput */
+        &x86RCOutput,      /* rcoutput */
         &x86Scheduler,     /* scheduler */
         nullptr,      /* util */
         nullptr) /* onboard optical flow */
@@ -125,12 +126,22 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     // AD->init
     x86AnalogIn.init();
 
-//    // set MCM Base Address
-//    set_MMIO();
-//    mcmInit();
-//    for(i=0; i<4; i++)
-//        mc_SetMode(i, MCMODE_PWM_SIFB);
+    // set MCM Base Address, init before using PWM in/out
+    set_MMIO();
+    mcmInit();
+    for(int i=0; i<4; i++)
+        mc_SetMode(i, MCMODE_PWM_SIFB);
 
+    // set MCM IRQ
+    if(irq_Init() == false)
+    {
+        printf("MCM IRQ init fail\n");
+    }
+    if(irq_Setting(GetMCIRQ(), IRQ_LEVEL_TRIGGER + IRQ_DISABLE_INTR) == false)
+    {
+        printf("MCM IRQ Setting fail\n");
+    }
+    Set_MCIRQ(GetMCIRQ());
 //    // init wdt1
 //    wdt_init();
 
@@ -153,7 +164,7 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //    // USB-CDC init()
 
 //    _sitl_state->init(argc, argv);
-//    scheduler->init();
+    x86Scheduler.init();
 //    uartA->begin(115200);
 
 //    rcin->init();
@@ -169,14 +180,42 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     x86GPIO.pinMode(13, HAL_GPIO_OUTPUT);
     Serial1.printf("usb:%s\n", x86GPIO.usb_connected()? "connected" : "not connect");    // @nasamit
 
+    x86RCOutput.init();
+    x86RCInput.init();
+
+    // RC output test
+    x86RCOutput.write(CH_1, 2000);
+    x86RCOutput.write(CH_2, 1300);
+    x86RCOutput.write(CH_3, 1700);
+    x86RCOutput.write(CH_4, 2000);
+
+//    x86RCOutput.cork();
+//    while( AP_HAL::millis()/1000 < 5 ) {};
+//    x86RCOutput.write(CH_2, 1000);
+//    while( AP_HAL::millis()/1000 < 7 ) {};
+//    x86RCOutput.write(CH_3, 1000);
+//    while( AP_HAL::millis()/1000 < 9 ) {};
+//    x86RCOutput.write(CH_4, 1000);
+//    x86RCOutput.push();
 
     for (;;) {
-//        x86Scheduler.delay(100);
+        x86Scheduler.delay(20);
+//        Serial1.printf("PWM %d %d %d %d\n", x86RCOutput.read(CH_1), x86RCOutput.read(CH_2),
+//                       x86RCOutput.read(CH_3), x86RCOutput.read(CH_4));
+        static uint32_t count = 1000;
+        static int8_t sign = 1;
+        count+= 20*sign;
+        x86RCOutput.write(CH_1, count);
+        if(count > 2000) sign = -1;
+        if(count < 1000) sign = 1;
+
+//        if(AP_HAL::millis()/1000 > 15 ) x86Scheduler.reboot(1);
+
 //        Serial1.printf("ms:%d, usb:%s\n", AP_HAL::millis(), x86GPIO.usb_connected()? "connected" : "not connect");    // @nasamit
 //        Serial1.printf("ms:%d, ch:%d, value:%d\n", AP_HAL::millis(), x86AnalogIn.channel(1)->read_latest(),
 //                       x86AnalogIn.channel(0)->read_latest());    // @nasamit
 //        x86GPIO.toggle(13);
-        x86AnalogIn.update();
+//        x86AnalogIn.update();
 //        callbacks->loop();
     }
 }
