@@ -136,15 +136,15 @@ void AnalogIn::update()
         break;
     }
 
-    static uint32_t print_time = AP_HAL::millis();
-    if( AP_HAL::millis() - print_time > 100)
-    {
-//        hal.uartB->printf("ms:%d, ch:%d, value:%d\n", AP_HAL::millis(), ch , ad);    // @nasamit
-        hal.uartB->printf("ms:%d, ch_0:%4.2f, ch_1:%4.2f, ch_2:%4.2f, ch_3:%4.2f, ch_4:%4.2f, ch_5:%4.2f, ch_6:%4.2f, \n"
-                          , AP_HAL::millis(), _channel[0]->voltage_average() , _channel[1]->voltage_average(), _channel[2]->voltage_average(),
-                _channel[3]->voltage_average(), _channel[4]->voltage_average(), _channel[5]->voltage_average(), _channel[6]->voltage_average());    // @nasamit
-        print_time = AP_HAL::millis() ;
-    }
+//    static uint32_t print_time = AP_HAL::millis();
+//    if( AP_HAL::millis() - print_time > 100)
+//    {
+////        hal.uartB->printf("ms:%d, ch:%d, value:%d\n", AP_HAL::millis(), ch , ad);    // @nasamit
+//        hal.uartB->printf("ms:%d, ch_0:%4.2f, ch_1:%4.2f, ch_2:%4.2f, ch_3:%4.2f, ch_4:%4.2f, ch_5:%4.2f, ch_6:%4.2f, \n"
+//                          , AP_HAL::millis(), _channel[0]->voltage_average() , _channel[1]->voltage_average(), _channel[2]->voltage_average(),
+//                _channel[3]->voltage_average(), _channel[4]->voltage_average(), _channel[5]->voltage_average(), _channel[6]->voltage_average());    // @nasamit
+//        print_time = AP_HAL::millis() ;
+//    }
 }
 
 AP_HAL::AnalogSource* AnalogIn::channel(int16_t n)

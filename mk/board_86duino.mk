@@ -119,7 +119,7 @@ print-%:
 
 upload:
 	upx $(SKETCH).exe
-	v86dude com5 20 $(SKETCH).exe
+	v86dude com5 20 $(SKETCH).exe standalone
 
 ################################################################################
 # Rules

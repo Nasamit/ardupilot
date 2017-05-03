@@ -199,7 +199,7 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //    x86RCOutput.push();
 
     for (;;) {
-        x86Scheduler.delay(20);
+        x86Scheduler.delay(1);
 //        Serial1.printf("PWM %d %d %d %d\n", x86RCOutput.read(CH_1), x86RCOutput.read(CH_2),
 //                       x86RCOutput.read(CH_3), x86RCOutput.read(CH_4));
         static uint32_t count = 1000;
@@ -208,6 +208,14 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
         x86RCOutput.write(CH_1, count);
         if(count > 2000) sign = -1;
         if(count < 1000) sign = 1;
+
+        if( x86RCInput.new_input() )
+        {
+            uint16_t RC_in[6];
+            x86RCInput.read( RC_in, 6);
+            usbUart.printf("ms:%d CH %d %d %d %d ,%d %d\n",AP_HAL::millis(),RC_in[0] ,RC_in[1] ,RC_in[2] ,RC_in[3] ,RC_in[4] ,RC_in[5]);
+            Serial1.printf("ms:%d \n",AP_HAL::millis());
+        }
 
 //        if(AP_HAL::millis()/1000 > 15 ) x86Scheduler.reboot(1);
 

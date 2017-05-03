@@ -23,9 +23,10 @@ static int timer1k_isr_handler(int irq, void* data)
     if((mc_inp(MC_1k, 0x04) & (PULSE_END_INT << mcint_offset[MD_1k])) == 0) return ISR_NONE;
     mc_outp(MC_1k, 0x04, (PULSE_END_INT << mcint_offset[MD_1k]));   // clear flag
 
-    static uint32_t count = 0 ;
-    count++;
-    if( count%500 == 0 ) hal.gpio->toggle(13);
+//    static uint32_t count = 0 ;
+//    count++;
+//    if( count%500 == 0 )
+//    hal.gpio->toggle(13);
     ((Scheduler*)hal.scheduler)->_run_timer_procs();
 
     return ISR_HANDLED;
@@ -36,6 +37,7 @@ Scheduler::Scheduler()
     _timer_1k_enable = false;
     _in_timer_1k = false;
     _timer_suspended = false;
+    _initialized = false;
 }
 
 void Scheduler::init()
