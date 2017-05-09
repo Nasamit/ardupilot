@@ -1,4 +1,4 @@
-
+#include <AP_HAL/AP_HAL.h>
 #include "Scheduler.h"
 #include "AnalogIn.h"
 
@@ -130,6 +130,16 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc)
     }
 }
 
+AP_HAL::Device::PeriodicHandle Scheduler::register_i2c_process(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    return nullptr;
+}
+
+AP_HAL::Device::PeriodicHandle Scheduler::register_spi_process(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    return nullptr;
+}
+
 void Scheduler::_run_io(void)
 {
     _in_io_proc = true;
@@ -141,6 +151,24 @@ void Scheduler::_run_io(void)
     }
 
     _in_io_proc = false;
+}
+
+void Scheduler::run_i2c_thread(void)
+{
+    _in_i2c_proc = true;
+
+    // now call the I2C device driver
+
+    _in_i2c_proc = false;
+}
+
+void Scheduler::run_spi_thread(void)
+{
+    _in_spi_proc = true;
+
+    // now call the I2C device driver
+
+    _in_spi_proc = false;
 }
 
 void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)

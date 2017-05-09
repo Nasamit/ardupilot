@@ -12,6 +12,7 @@
 #include "Scheduler.h"
 #include "AnalogIn.h"
 #include "UARTDriver.h"
+#include "I2CDevice.h"
 //#include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
@@ -20,11 +21,10 @@
 //#include "Util.h"
 #include "USBSerial.h"
 
-//#include <AP_HAL_Empty/AP_HAL_Empty.h>
-//#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include "io.h"
 #include "irq.h"
 #include "pins_arduino.h"
+#include "i2c.h"
 
 using namespace x86Duino;
 
@@ -35,9 +35,10 @@ static RCInput  x86RCInput;
 static RCOutput x86RCOutput;
 static AnalogIn x86AnalogIn;
 static GPIO x86GPIO;
+static I2CDeviceManager x86I2C;
 
 //// use the Empty HAL for hardware we don't emulate
-//static Empty::I2CDeviceManager i2c_mgr_instance;
+
 //static Empty::SPIDeviceManager emptySPI;
 //static Empty::OpticalFlow emptyOpticalFlow;
 
@@ -57,7 +58,7 @@ HAL_86Duino::HAL_86Duino() :
         &Serial3,   /* uartD */
         &Serial485,   /* uartE */
         nullptr,   /* uartF */
-        nullptr,
+        &x86I2C,   /* i2c */
         nullptr,          /* spi */
         &x86AnalogIn,      /* analogin */
         nullptr, /* storage */
@@ -96,29 +97,29 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     printf("Hello ArduPlot!!\n");   // @nasamit
     assert(callbacks);
 
-//    int i, crossbarBase, gpioBase;
-//    if(io_Init() == false) return;
-//    timer_NowTime(); // initialize timer
-//    CLOCKS_PER_MICROSEC = vx86_CpuCLK();
-//    VORTEX86EX_CLOCKS_PER_MS = CLOCKS_PER_MICROSEC*1000UL;
+    int i, crossbarBase, gpioBase;
+    if(io_Init() == false) return;
+    timer_NowTime(); // initialize timer
+    CLOCKS_PER_MICROSEC = vx86_CpuCLK();
+    VORTEX86EX_CLOCKS_PER_MS = CLOCKS_PER_MICROSEC*1000UL;
 
-//    // Set IRQ4 as level-trigger
-//    io_outpb(0x4D0, io_inpb(0x4D0) | 0x10);
+    // Set IRQ4 as level-trigger
+    io_outpb(0x4D0, io_inpb(0x4D0) | 0x10);
 
-//    //set corssbar Base Address
-//    crossbarBase = sb_Read16(SB_CROSSBASE) & 0xfffe;
-//    if(crossbarBase == 0 || crossbarBase == 0xfffe)
-//    {
-//        sb_Write16(SB_CROSSBASE, CROSSBARBASE | 0x01);
-//        crossbarBase = CROSSBARBASE;
-//    }
+    //set corssbar Base Address
+    crossbarBase = sb_Read16(SB_CROSSBASE) & 0xfffe;
+    if(crossbarBase == 0 || crossbarBase == 0xfffe)
+    {
+        sb_Write16(SB_CROSSBASE, CROSSBARBASE | 0x01);
+        crossbarBase = CROSSBARBASE;
+    }
 
-//#if defined CRB_DEBUGMODE
-//    for(i=0; i<CRBTABLE_SIZE; i++) io_outpb(crossbarBase+i, CROSSBARTABLE[i]);
-//#endif
+#if defined CRB_DEBUGMODE
+    for(i=0; i<CRBTABLE_SIZE; i++) io_outpb(crossbarBase+i, CROSSBARTABLE[i]);
+#endif
 
-//    // Force set HIGH speed ISA on SB
-//    sb_Write(SB_FCREG, sb_Read(SB_FCREG) | 0x8000C000L);
+    // Force set HIGH speed ISA on SB
+    sb_Write(SB_FCREG, sb_Read(SB_FCREG) | 0x8000C000L);
 
     // GPIO->init
     x86GPIO.init();
@@ -145,23 +146,8 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //    // init wdt1
 //    wdt_init();
 
-//    if(Global_irq_Init == false)
-//    {
-//        // set MCM IRQ
-//        if(irq_Init() == false)
-//        {
-//            printf("MCM IRQ init fail\n"); return false;
-//        }
-
-//        if(irq_Setting(GetMCIRQ(), IRQ_LEVEL_TRIGGER + IRQ_DISABLE_INTR) == false)
-//        {
-//            printf("MCM IRQ Setting fail\n"); return false;
-//        }
-//        Set_MCIRQ(GetMCIRQ());
-//        Global_irq_Init = true;
-//    }
-
-//    // USB-CDC init()
+    // USB-CDC init()
+    usbUart.begin(115200);
 
 //    _sitl_state->init(argc, argv);
     x86Scheduler.init();
@@ -183,11 +169,20 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     x86RCOutput.init();
     x86RCInput.init();
 
-    // RC output test
-    x86RCOutput.write(CH_1, 2000);
-    x86RCOutput.write(CH_2, 1300);
-    x86RCOutput.write(CH_3, 1700);
-    x86RCOutput.write(CH_4, 2000);
+    // I2C init
+//    x86I2C.init();
+    i2c_Init2(0xFB00, I2C_USEMODULE0, I2CIRQ_DISABLE, I2CIRQ_DISABLE);
+    i2c_SetSpeed(0, I2CMODE_AUTO, 400000L);
+//    x86I2C.init();
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> mpu = x86I2C.get_device(0 , 0x68);
+    uint8_t val = 0;
+    mpu->read_registers(0x75, &val, 1 );
+    Serial1.printf("ms:%d, Who am I 0x%x\n", AP_HAL::millis() ,val );
+//    // RC output test
+//    x86RCOutput.write(CH_1, 2000);
+//    x86RCOutput.write(CH_2, 1300);
+//    x86RCOutput.write(CH_3, 1700);
+//    x86RCOutput.write(CH_4, 2000);
 
 //    x86RCOutput.cork();
 //    while( AP_HAL::millis()/1000 < 5 ) {};
@@ -196,7 +191,7 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //    x86RCOutput.write(CH_3, 1000);
 //    while( AP_HAL::millis()/1000 < 9 ) {};
 //    x86RCOutput.write(CH_4, 1000);
-//    x86RCOutput.push();
+//    x86RCOutput.push();    
 
     for (;;) {
         x86Scheduler.delay(1);
@@ -213,8 +208,9 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
         {
             uint16_t RC_in[6];
             x86RCInput.read( RC_in, 6);
-            usbUart.printf("ms:%d CH %d %d %d %d ,%d %d\n",AP_HAL::millis(),RC_in[0] ,RC_in[1] ,RC_in[2] ,RC_in[3] ,RC_in[4] ,RC_in[5]);
-            Serial1.printf("ms:%d \n",AP_HAL::millis());
+            Serial1.printf("ms:%d CH %d %d %d %d ,%d %d\n",AP_HAL::millis(),RC_in[0] ,RC_in[1] ,RC_in[2] ,RC_in[3] ,RC_in[4] ,RC_in[5]);
+//            Serial1.printf("ms:%d \n",AP_HAL::millis());
+            x86RCOutput.write(CH_2, RC_in[2]);
         }
 
 //        if(AP_HAL::millis()/1000 > 15 ) x86Scheduler.reboot(1);

@@ -29,7 +29,13 @@ public:
     void    _run_timer_procs(void);
     void    _run_io();
 
-//    void    why();
+    //    void    why();
+    AP_HAL::Device::PeriodicHandle    register_i2c_process(
+            uint32_t period_usec, AP_HAL::Device::PeriodicCb cb);
+    AP_HAL::Device::PeriodicHandle    register_spi_process(
+            uint32_t period_usec, AP_HAL::Device::PeriodicCb cb);
+    void    run_spi_thread();
+    void    run_i2c_thread();
 private:
     volatile bool _timer_1k_enable, _timer_400hz_enable;
     volatile bool _timer_suspended;
@@ -45,5 +51,8 @@ private:
     AP_HAL::MemberProc _io_proc[X86_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
+
+    volatile bool _in_i2c_proc;
+    volatile bool _in_spi_proc;
 
 };

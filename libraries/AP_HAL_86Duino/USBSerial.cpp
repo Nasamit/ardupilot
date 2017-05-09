@@ -9,6 +9,13 @@ USBSerial::USBSerial()
 {
     peek_stored = false;
     peek_val = -1;
+}
+
+
+void USBSerial::begin(uint32_t b)
+{
+    peek_stored = false;
+    peek_val = -1;
     USBDEV = NULL;
     //CDC
     USBDEV = CreateUSBDevice();
@@ -24,12 +31,6 @@ USBSerial::USBSerial()
         printf("USB(CDC) init error\n");
         USBDEV = NULL;
     }
-}
-
-void USBSerial::begin(uint32_t b)
-{
-    peek_stored = false;
-    peek_val = -1;
 }
 
 void USBSerial::begin(uint32_t b, uint16_t rxS, uint16_t txS)
