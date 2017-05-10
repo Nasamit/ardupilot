@@ -170,10 +170,7 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     x86RCInput.init();
 
     // I2C init
-//    x86I2C.init();
-    i2c_Init2(0xFB00, I2C_USEMODULE0, I2CIRQ_DISABLE, I2CIRQ_DISABLE);
-    i2c_SetSpeed(0, I2CMODE_AUTO, 400000L);
-//    x86I2C.init();
+    x86I2C.init();
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> mpu = x86I2C.get_device(0 , 0x68);
     uint8_t val = 0;
     mpu->read_registers(0x75, &val, 1 );

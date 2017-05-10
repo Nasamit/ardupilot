@@ -147,7 +147,6 @@
 #else
 #error "Unknown CONFIG_HAL_BOARD type"
 #endif
-
 #ifndef CONFIG_HAL_BOARD_SUBTYPE
 #error "No CONFIG_HAL_BOARD_SUBTYPE set"
 #endif

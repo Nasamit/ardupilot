@@ -84,8 +84,6 @@ public:
     /* AP_HAL::I2CDeviceManager implementation */
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address);
     void init();
-private:
-    void set_pins(int dev, int SCL, int SDA);
 };
 
 }
