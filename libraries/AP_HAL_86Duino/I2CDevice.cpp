@@ -26,7 +26,10 @@ extern const AP_HAL::HAL& hal ;
 
 I2CDevice::I2CDevice(uint8_t address) :
     _address(address)
-{}
+{
+    set_device_bus(0);  //I2C0
+    set_device_address(address);
+}
 
 I2CDevice::~I2CDevice()
 {
@@ -50,6 +53,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         for( uint32_t i = 0 ; i < recv_len ; i++ )
             recv[i] = i2cmaster_ReadN(0) ;
     }
+    return true;
 }
 
 AP_HAL::Semaphore *I2CDevice::get_semaphore()
@@ -62,7 +66,7 @@ AP_HAL::Semaphore *I2CDevice::get_semaphore()
 */
 AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
-    return ((Scheduler*)hal.scheduler)->register_i2c_process( period_usec, cb) ;;
+    return ((Scheduler*)hal.scheduler)->register_i2c_process( period_usec, cb) ;
 }
 
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>

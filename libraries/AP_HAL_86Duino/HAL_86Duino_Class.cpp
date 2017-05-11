@@ -13,6 +13,7 @@
 #include "AnalogIn.h"
 #include "UARTDriver.h"
 #include "I2CDevice.h"
+#include "SPIDevice.h"
 //#include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
@@ -36,6 +37,7 @@ static RCOutput x86RCOutput;
 static AnalogIn x86AnalogIn;
 static GPIO x86GPIO;
 static I2CDeviceManager x86I2C;
+static SPIDeviceManager x86SPI;
 
 //// use the Empty HAL for hardware we don't emulate
 
@@ -59,7 +61,7 @@ HAL_86Duino::HAL_86Duino() :
         &Serial485,   /* uartE */
         nullptr,   /* uartF */
         &x86I2C,   /* i2c */
-        nullptr,          /* spi */
+        &x86SPI,          /* spi */
         &x86AnalogIn,      /* analogin */
         nullptr, /* storage */
         &usbUart,   /* console */
@@ -170,11 +172,18 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     x86RCInput.init();
 
     // I2C init
-    x86I2C.init();
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> mpu = x86I2C.get_device(0 , 0x68);
+//    x86I2C.init();
+//    AP_HAL::OwnPtr<AP_HAL::I2CDevice> mpu = x86I2C.get_device(0 , 0x68);
+//    uint8_t val = 0;
+//    mpu->read_registers(0x75, &val, 1 );
+//    Serial1.printf("ms:%d, Who am I 0x%x\n", AP_HAL::millis() ,val );
+
+    // SPI test
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> mpu = x86SPI.get_device("mpu9250");
     uint8_t val = 0;
+    mpu->set_read_flag(0x80);   // mpu need to set read flag
     mpu->read_registers(0x75, &val, 1 );
-    Serial1.printf("ms:%d, Who am I 0x%x\n", AP_HAL::millis() ,val );
+    Serial1.printf("SPI ms:%d, Who am I 0x%x\n", AP_HAL::millis() ,val );
 //    // RC output test
 //    x86RCOutput.write(CH_1, 2000);
 //    x86RCOutput.write(CH_2, 1300);
@@ -192,6 +201,7 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 
     for (;;) {
         x86Scheduler.delay(1);
+
 //        Serial1.printf("PWM %d %d %d %d\n", x86RCOutput.read(CH_1), x86RCOutput.read(CH_2),
 //                       x86RCOutput.read(CH_3), x86RCOutput.read(CH_4));
         static uint32_t count = 1000;

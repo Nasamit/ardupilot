@@ -25,60 +25,64 @@
 
 namespace x86Duino {
 
+class SPIBus;
+class SPIDesc;
+
 class SPIDevice : public AP_HAL::SPIDevice {
 public:
-    SPIDevice()
-    {
-    }
+    SPIDevice(SPIBus &bus, SPIDesc &device_desc);
 
     virtual ~SPIDevice() { }
 
     /* AP_HAL::Device implementation */
 
     /* See AP_HAL::Device::set_speed() */
-    bool set_speed(AP_HAL::Device::Speed speed) override
-    {
-        return true;
-    }
+    bool set_speed(AP_HAL::Device::Speed speed) override;
 
     /* See AP_HAL::Device::transfer() */
     bool transfer(const uint8_t *send, uint32_t send_len,
-                  uint8_t *recv, uint32_t recv_len) override
-    {
-        return true;
-    }
+                  uint8_t *recv, uint32_t recv_len) override;
 
     /* See AP_HAL::SPIDevice::transfer_fullduplex() */
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
-                             uint32_t len) override
-    {
-        return true;
-    }
+                             uint32_t len) override;
 
     /* See AP_HAL::Device::get_semaphore() */
-    AP_HAL::Semaphore *get_semaphore()
-    {
-        return &_semaphore;
-    }
+    AP_HAL::Semaphore *get_semaphore();
 
     /* See AP_HAL::Device::register_periodic_callback() */
     AP_HAL::Device::PeriodicHandle register_periodic_callback(
-        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override
-    {
-        return nullptr;
-    }
+        uint32_t period_usec, AP_HAL::Device::PeriodicCb cb) override;
 
 private:
-    Semaphore _semaphore;
+    SPIBus &_bus;
+    SPIDesc &_desc;
+    AP_HAL::DigitalSource *_cs;
+    uint32_t _speed;
+    static Semaphore spi_semaphore;
+
+
+    /*
+     * Select device if using userspace CS
+     */
+    void _cs_assert();
+
+    /*
+     * Deselect device if using userspace CS
+     */
+    void _cs_release();
 };
 
 class SPIDeviceManager : public AP_HAL::SPIDeviceManager {
 public:
-    SPIDeviceManager() { }
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override
-    {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice());
-    }
+    SPIDeviceManager();
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
+    void init();
+
+private:
+    static const uint8_t _n_device_desc;
+    static SPIDesc _device[];
+    SPIBus  *_bus;
 };
 
 }
