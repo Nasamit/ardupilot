@@ -98,7 +98,7 @@ BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
 endif
 
 ifeq ($(BUILDROOT),)
-BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).b)
+BUILDROOT		:=	C:$(TMPDIR)/$(SKETCH).build
 endif
 
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)

@@ -27,7 +27,7 @@ public:
 
     void     reboot(bool hold_in_bootloader);
     void    _run_timer_procs(void);
-    void    _run_io();
+    void     run_io();
 
     //    void    why();
     AP_HAL::Device::PeriodicHandle    register_i2c_process(

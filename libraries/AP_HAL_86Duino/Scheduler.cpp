@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "Scheduler.h"
 #include "AnalogIn.h"
+#include "Storage.h"
 
 #include <stdarg.h>
 #include "io.h"
@@ -140,7 +141,7 @@ AP_HAL::Device::PeriodicHandle Scheduler::register_spi_process(uint32_t period_u
     return nullptr;
 }
 
-void Scheduler::_run_io(void)
+void Scheduler::run_io(void)
 {
     _in_io_proc = true;
 
@@ -149,6 +150,7 @@ void Scheduler::_run_io(void)
         if (_io_proc[i]) _io_proc[i]();
 
     }
+    ((Storage*)hal.storage)->_timer_tick();
 
     _in_io_proc = false;
 }

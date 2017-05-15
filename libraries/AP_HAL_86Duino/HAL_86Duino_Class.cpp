@@ -14,7 +14,7 @@
 #include "UARTDriver.h"
 #include "I2CDevice.h"
 #include "SPIDevice.h"
-//#include "Storage.h"
+#include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "GPIO.h"
@@ -38,6 +38,7 @@ static AnalogIn x86AnalogIn;
 static GPIO x86GPIO;
 static I2CDeviceManager x86I2C;
 static SPIDeviceManager x86SPI;
+static Storage x86Storage;
 
 //// use the Empty HAL for hardware we don't emulate
 
@@ -63,7 +64,7 @@ HAL_86Duino::HAL_86Duino() :
         &x86I2C,   /* i2c */
         &x86SPI,          /* spi */
         &x86AnalogIn,      /* analogin */
-        nullptr, /* storage */
+        &x86Storage, /* storage */
         &usbUart,   /* console */
         &x86GPIO,          /* gpio */
         &x86RCInput,       /* rcinput */
@@ -199,8 +200,11 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //    x86RCOutput.write(CH_4, 1000);
 //    x86RCOutput.push();    
 
+    // Storage test
+    x86Storage.init();
+
     for (;;) {
-        x86Scheduler.delay(1);
+        x86Scheduler.delay(10);
 
 //        Serial1.printf("PWM %d %d %d %d\n", x86RCOutput.read(CH_1), x86RCOutput.read(CH_2),
 //                       x86RCOutput.read(CH_3), x86RCOutput.read(CH_4));
@@ -220,6 +224,16 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
             x86RCOutput.write(CH_2, RC_in[2]);
         }
 
+        // storage test
+        static uint32_t idx_w = 0 ;
+        if( idx_w < 16 )
+        {
+            idx_w ++ ;
+            uint8_t buf[1024] ;
+            memset( buf, idx_w, sizeof(buf)) ;
+            x86Storage.write_block(idx_w*1024, buf, sizeof(buf));
+        }
+
 //        if(AP_HAL::millis()/1000 > 15 ) x86Scheduler.reboot(1);
 
 //        Serial1.printf("ms:%d, usb:%s\n", AP_HAL::millis(), x86GPIO.usb_connected()? "connected" : "not connect");    // @nasamit
@@ -227,7 +241,12 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //                       x86AnalogIn.channel(0)->read_latest());    // @nasamit
 //        x86GPIO.toggle(13);
 //        x86AnalogIn.update();
+
+
+        x86Scheduler.run_i2c_thread();
+        x86Scheduler.run_spi_thread();
 //        callbacks->loop();
+        x86Scheduler.run_io();
     }
 }
 
