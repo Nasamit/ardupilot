@@ -5,9 +5,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-
-//#include "AP_HAL_SITL.h"
-//#include "AP_HAL_SITL_Namespace.h"
 #include "HAL_86Duino_Class.h"
 #include "Scheduler.h"
 #include "AnalogIn.h"
@@ -18,8 +15,7 @@
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "GPIO.h"
-//#include "SITL_State.h"
-//#include "Util.h"
+#include "Util.h"
 #include "USBSerial.h"
 
 #include "io.h"
@@ -28,9 +24,6 @@
 #include "i2c.h"
 
 using namespace x86Duino;
-
-//static EEPROMStorage sitlEEPROMStorage;
-//static SITL_State sitlState;
 static Scheduler x86Scheduler;
 static RCInput  x86RCInput;
 static RCOutput x86RCOutput;
@@ -39,11 +32,8 @@ static GPIO x86GPIO;
 static I2CDeviceManager x86I2C;
 static SPIDeviceManager x86SPI;
 static Storage x86Storage;
+static Util x86Util;
 
-//// use the Empty HAL for hardware we don't emulate
-
-//static Empty::SPIDeviceManager emptySPI;
-//static Empty::OpticalFlow emptyOpticalFlow;
 
 static UARTDriver Serial1(COM1, 115200L, BYTESIZE8|NOPARITY|STOPBIT1, 0L, 500L);
 static UARTDriver Serial2(COM2, 115200L, BYTESIZE8|NOPARITY|STOPBIT1, 0L, 500L);
@@ -70,7 +60,7 @@ HAL_86Duino::HAL_86Duino() :
         &x86RCInput,       /* rcinput */
         &x86RCOutput,      /* rcoutput */
         &x86Scheduler,     /* scheduler */
-        nullptr,      /* util */
+        &x86Util,      /* util */
         nullptr) /* onboard optical flow */
 //        &sitlUart0Driver,   /* uartA */
 //        &sitlUart1Driver,   /* uartB */
@@ -105,6 +95,7 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     timer_NowTime(); // initialize timer
     CLOCKS_PER_MICROSEC = vx86_CpuCLK();
     VORTEX86EX_CLOCKS_PER_MS = CLOCKS_PER_MICROSEC*1000UL;
+    printf("clock %lu\n",CLOCKS_PER_MICROSEC);   // @nasamit
 
     // Set IRQ4 as level-trigger
     io_outpb(0x4D0, io_inpb(0x4D0) | 0x10);
@@ -224,15 +215,20 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
             x86RCOutput.write(CH_2, RC_in[2]);
         }
 
-        // storage test
+        // storage test & hal test
+        static auto _perf_write = x86Util.perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write");
         static uint32_t idx_w = 0 ;
         if( idx_w < 16 )
         {
             idx_w ++ ;
             uint8_t buf[1024] ;
             memset( buf, idx_w, sizeof(buf)) ;
+            x86Util.perf_begin(_perf_write);
             x86Storage.write_block(idx_w*1024, buf, sizeof(buf));
+            x86Util.perf_end(_perf_write);
         }
+
+        x86Util._debug_counters();
 
 //        if(AP_HAL::millis()/1000 > 15 ) x86Scheduler.reboot(1);
 
