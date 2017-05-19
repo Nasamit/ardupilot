@@ -5,6 +5,7 @@
 #include <vector>
 #include <climits>
 #include <atomic>
+#include <time.h>
 
 namespace x86Duino {
 
@@ -68,6 +69,7 @@ public:
     AP_HAL::Semaphore *new_semaphore(void) override;
     void _debug_counters();
 
+    time_t compile_time(const char *date, const char *time);
 private:
     std::vector<Perf_Counter> _perf_counters;
     std::atomic<unsigned int> _update_count;

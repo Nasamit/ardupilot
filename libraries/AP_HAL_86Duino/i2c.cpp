@@ -468,24 +468,24 @@ TX_SUCCESS:
 
     if ((statreg & 0x08) != 0) //if (i2cmaster_CheckARLoss(dev) == true)
     {
-        err_print("arbitration loss for I2C bus");
+        err_print("arbitration loss for I2C bus\n");
         i2cmaster_ClearARLoss(dev);
     }
     if ((statreg & 0x10) != 0) //if (i2cmaster_CheckAckErr(dev) == true)
     {
-        err_print("receive no ACK after transmitting");
+        err_print("receive no ACK after transmitting, ADD:%x\n",I2C_curAddr[0]);
         i2cmaster_ClearAckErr(dev);
     }
     if ((statreg & (0x10 + 0x08)) != 0) return false;
 
     if ((statreg & 0x01) == 0) //if (i2c_IsMaster(dev) == false)
     {
-        err_print("I2C%d module isn't in Master Mode", dev);
+        err_print("I2C%d module isn't in Master Mode\n", dev);
         return false;
     }
     if ((statreg & 0x20) == 0) //if (i2c_CheckTXDone(dev) == false)
     {
-        err_print("I2C%d module doesn't respond", dev);
+        err_print("I2C%d module doesn't respond\n", dev);
         return false;
     }
     

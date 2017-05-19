@@ -18,9 +18,9 @@
 #define HAL_COMPASS_DEFAULT HAL_COMPASS_HMC5843
 #define HAL_COMPASS_HMC5843_I2C_BUS 0
 #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
-#define HAL_GPIO_A_LED_PIN        61
-#define HAL_GPIO_B_LED_PIN        48
-#define HAL_GPIO_C_LED_PIN        117
+#define HAL_GPIO_A_LED_PIN        13
+#define HAL_GPIO_B_LED_PIN        12
+#define HAL_GPIO_C_LED_PIN        11
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH
 

@@ -39,6 +39,7 @@ public:
 private:
     volatile bool _timer_1k_enable, _timer_400hz_enable;
     volatile bool _timer_suspended;
+    volatile bool _wdt_1k_enable;
     bool    _initialized;
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
@@ -52,7 +53,14 @@ private:
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
 
+    struct callback_info {
+        AP_HAL::Device::PeriodicCb cb;
+        uint32_t period_usec;
+        uint64_t next_usec;
+    };
+    struct callback_info _i2c_proc[X86_SCHEDULER_MAX_TIMER_PROCS];
+    struct callback_info _spi_proc[X86_SCHEDULER_MAX_TIMER_PROCS];
+    uint8_t _num_spi_procs, _num_i2c_procs;
     volatile bool _in_i2c_proc;
     volatile bool _in_spi_proc;
-
 };

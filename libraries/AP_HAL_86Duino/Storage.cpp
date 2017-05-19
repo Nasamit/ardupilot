@@ -189,5 +189,6 @@ void Storage::_init_file( )
     ssize_t ret = fwrite(_buffer, 1, sizeof(_buffer), file);
     if( ret != HAL_STORAGE_SIZE )
         hal.uartB->printf("init file error\n");
+    fflush(_file);  // flush buffer to OS buffer
     fclose(file);
 }

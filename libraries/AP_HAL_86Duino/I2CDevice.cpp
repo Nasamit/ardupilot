@@ -72,6 +72,7 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
 I2CDeviceManager::get_device(uint8_t bus, uint8_t address)
 {
+    if( !_is_initailized )  init();
     auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(address));
     return dev;
 }
@@ -80,5 +81,6 @@ void I2CDeviceManager::init(void)
 {
     i2c_Init2(0xFB00, I2C_USEMODULE0, I2CIRQ_DISABLE, I2CIRQ_DISABLE);
     i2c_SetSpeed(0, I2CMODE_AUTO, 400000L);
+    _is_initailized = true;
 }
 

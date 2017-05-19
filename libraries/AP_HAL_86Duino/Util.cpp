@@ -1,7 +1,7 @@
 #include "Util.h"
 #include "io.h"
 #include <cmath>
-#include <time.h>
+#include <dos.h>
 
 extern const AP_HAL::HAL& hal ;
 
@@ -18,7 +18,6 @@ static inline uint64_t now_nsec()
     return (nowclocks*1000)/vx86_CpuCLK();
 }
 
-
 enum Util::safety_state Util::safety_switch_state()
 {
     return SAFETY_NONE;
@@ -26,10 +25,38 @@ enum Util::safety_state Util::safety_switch_state()
 
 void Util::set_system_clock(uint64_t time_utc_usec)
 {
-//    timespec ts;
-//    ts.tv_sec = time_utc_usec/1.0e6;
-//    ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
-//    clock_settime(CLOCK_REALTIME, &ts);
+//    hal.uartB->printf("set time_t : %llu\n", time_utc_usec);
+    struct timeval tp;
+    tp.tv_sec = time_utc_usec/1000000 ;
+    tp.tv_usec = time_utc_usec%1000000 ;
+    settimeofday(&tp);
+}
+
+time_t Util::compile_time(char const *date, char const *time) {
+    char s_month[5];
+    int month, day, year;
+    int Hour, Minute, Second;
+    struct tm t = {0};
+    static const char month_names[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
+
+    sscanf(date, "%s %d %d", s_month, &day, &year);
+    sscanf(time, "%d:%d:%d", &Hour, &Minute, &Second);
+    month = (strstr(month_names, s_month)-month_names)/3;
+
+//    hal.uartB->printf(" HMS : %d %d %d \n", Hour, Minute, Second);
+//    hal.uartB->printf(" YMD : %d %d %d \n", year, month, day);
+
+    t.tm_sec  = Second;
+    t.tm_min  = Minute;
+    t.tm_hour  = Hour;
+    t.tm_mon = month;
+    t.tm_mday = day;
+    t.tm_year = year - 1900;
+    t.tm_isdst = -1;
+
+//    hal.uartB->printf("compile time_t : %d\n",mktime(&t) );
+
+    return mktime(&t);
 }
 
 bool Util::get_system_id(char buf[]) { return false; }

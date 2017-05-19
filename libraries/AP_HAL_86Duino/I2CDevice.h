@@ -79,11 +79,13 @@ private:
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
 public:
-    I2CDeviceManager() { }
+    I2CDeviceManager() { _is_initailized = false;}
 
     /* AP_HAL::I2CDeviceManager implementation */
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address);
     void init();
+private:
+    bool _is_initailized;
 };
 
 }

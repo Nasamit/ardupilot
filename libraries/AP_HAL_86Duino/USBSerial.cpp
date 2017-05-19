@@ -9,6 +9,7 @@ USBSerial::USBSerial()
 {
     peek_stored = false;
     peek_val = -1;
+    USBDEV = NULL;
 }
 
 
@@ -16,7 +17,8 @@ void USBSerial::begin(uint32_t b)
 {
     peek_stored = false;
     peek_val = -1;
-    USBDEV = NULL;
+
+    if( USBDEV != NULL ) return;
     //CDC
     USBDEV = CreateUSBDevice();
     if(USBDEV == NULL)
