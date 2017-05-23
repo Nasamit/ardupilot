@@ -514,7 +514,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 
     case MSG_MOUNT_STATUS:
 #if MOUNT == ENABLED
-        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);    
+        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
         copter.camera_mount.status_msg(chan);
 #endif // MOUNT == ENABLED
         break;

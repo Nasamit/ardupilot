@@ -71,7 +71,13 @@ uint32_t USBSerial::available()
     if(USBDEV == NULL) return 0;
     return usb_QueryRxQueue(USBDEV);
 }
-uint32_t USBSerial::txspace() { return 1; }
+
+uint32_t USBSerial::txspace()
+{
+    if(USBDEV == NULL) return 0;
+    return ( 4096 - usb_QueryTxQueue(USBDEV) );
+}
+
 int16_t USBSerial::read()
 {
     int c;

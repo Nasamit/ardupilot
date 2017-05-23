@@ -161,8 +161,9 @@ uint32_t UARTDriver::available()
 
 uint32_t UARTDriver::txspace()
 {
-    if(handle == NULL) return 0;
-    return com_QueryTxQueue(handle);
+    if(handle ==NULL) return 0;
+    // caution! size define in uart.cpp
+    return (4096 - com_QueryTxQueue(handle));
 }
 
 int UARTDriver::peek(void)

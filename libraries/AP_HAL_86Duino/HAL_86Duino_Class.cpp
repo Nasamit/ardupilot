@@ -125,9 +125,9 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     callbacks->setup();
     scheduler->system_initialized();
 
-
     for (;;) {
-//        x86Scheduler.delay(10);
+//        x86Scheduler.delay(100);
+//        usbUart.printf("A: %d, B: %d, C: %d\n", Serial1.txspace(), Serial2.txspace(), Serial3.txspace());
 
 //        Serial1.printf("ms: %llu\n", x86Util.get_system_clock_ms() );
 
@@ -147,12 +147,12 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //            x86RCOutput.write(CH_2, RC_in[2]);
 //        }
 
-        static int last_print = AP_HAL::millis() ;
-        if( AP_HAL::millis() - last_print > 1000 )
-        {
-            last_print = AP_HAL::millis();
-            Serial1.printf("ms: %d , wdt_count: %d \n", last_print, wdt_count );
-        }
+//        static int last_print = AP_HAL::millis() ;
+//        if( AP_HAL::millis() - last_print > 1000 )
+//        {
+//            last_print = AP_HAL::millis();
+//            Serial1.printf("ms: %d , wdt_count: %d \n", last_print, wdt_count );
+//        }
 //        // storage test & hal test
 //        static auto _perf_write = x86Util.perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write");
 //        static uint32_t idx_w = 0 ;
@@ -176,7 +176,12 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 ////        x86GPIO.toggle(13);
 ////        x86AnalogIn.update();
 
+//        static auto _perf_write = x86Util.perf_alloc(AP_HAL::Util::PC_ELAPSED, "loop_time");
+//        x86Util.perf_begin(_perf_write);
         callbacks->loop();
+//        x86Util.perf_end(_perf_write);
+//        x86Util._debug_counters();
+
         x86Scheduler.run_io();
     }
 }
