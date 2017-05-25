@@ -59,6 +59,8 @@ public:
       terminated
      */
     bool get_system_id(char buf[40]);
+
+    uint32_t available_memory(void) override { return 40960; }
     
     perf_counter_t perf_alloc(perf_counter_type t, const char *name) override;
     void perf_begin(perf_counter_t h) override;

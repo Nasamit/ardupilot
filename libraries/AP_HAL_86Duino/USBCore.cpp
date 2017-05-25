@@ -716,11 +716,12 @@ DMP_INLINE(void) Set_Control_Line_State(USB_Device *usb)
 	
 	usb->control_line_state = usb->Setup.wValue.Value;
 	
-	if (usb->control_line_state == 0)
-		usb->state = USB_DEV_CONFIGURED;
-	else
+        // modify to match Misson Planner
+//	if (usb->control_line_state == 0)
+//		usb->state = USB_DEV_CONFIGURED;
+//	else
 		usb->state = USB_DEV_CDC_CONNECT;
-	//printf("%d %d\n", usb->control_line_state, usb->state);	
+	//printf("%d %d\n", usb->control_line_state, usb->state);
 	SetEPnDLR(usb, EP0, IN, ENABLE | STSACK);
 	
 #ifdef DMP_86DUINO_RESET_ACTIVE

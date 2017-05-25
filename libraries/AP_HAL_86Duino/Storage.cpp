@@ -151,10 +151,12 @@ void Storage::_mtd_load(void)
         AP_HAL::panic("Failed to open " MTD_PARAMS_FILE "\n");
     }
 
+    // reset buffer frist
+    memset( _buffer, 0 , sizeof(_buffer));
     ssize_t ret = fread(_buffer, 1, sizeof(_buffer), file);
-    if (ret != HAL_STORAGE_SIZE) {
-        AP_HAL::panic("Failed to read " MTD_PARAMS_FILE "\n");
-    }
+//    if (ret != HAL_STORAGE_SIZE) {
+//        AP_HAL::panic("Failed to read " MTD_PARAMS_FILE "\n");
+//    }
 
     fclose(file);
 }
@@ -170,14 +172,14 @@ void Storage::_check_file()
         return;
     }
 
-    // file size check
-    fseek(file, 0, SEEK_END);
-    int size = ftell(file);
-    if( size != HAL_STORAGE_SIZE)
-    {
-        fclose( file );
-        _init_file();
-    }
+//    // file size check
+//    fseek(file, 0, SEEK_END);
+//    int size = ftell(file);
+//    if( size != HAL_STORAGE_SIZE)
+//    {
+//        fclose( file );
+//        _init_file();
+//    }
     fclose( file );
 }
 
@@ -188,7 +190,7 @@ void Storage::_init_file( )
     memset( _buffer, 0 , sizeof(_buffer));  // reset buffer
     ssize_t ret = fwrite(_buffer, 1, sizeof(_buffer), file);
     if( ret != HAL_STORAGE_SIZE )
-        hal.uartB->printf("init file error\n");
+        hal.console->printf("init file error\n");
     fflush(_file);  // flush buffer to OS buffer
     fclose(file);
 }
