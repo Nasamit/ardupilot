@@ -33,6 +33,8 @@
 #if defined(__APPLE__) && defined(__MACH__)
 #include <sys/param.h>
 #include <sys/mount.h>
+#elif defined( __86DUINO__ )
+#include <sys/vfs.h>
 #elif !DATAFLASH_FILE_MINIMAL
 #include <sys/statfs.h>
 #endif

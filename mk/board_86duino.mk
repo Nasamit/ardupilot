@@ -8,7 +8,7 @@ EXTRAFLAGS += -DHAVE_CMATH_ISFINITE -DNEED_CMATH_ISFINITE_STD_NAMESPACE
 # Add missing parts from libc and libstdc++
 EXTRAFLAGS += -DHAVE_CMATH_ISNAN -DNEED_CMATH_ISNAN_STD_NAMESPACE
 EXTRAFLAGS += -DHAVE_CMATH_ISINF -DNEED_CMATH_ISINF_STD_NAMESPACE
-EXTRAFLAGS += -D__86DUINO__
+EXTRAFLAGS += -D__86DUINO__ -DHAVE_OCLOEXEC=0
 #
 # Tool options
 #
@@ -27,8 +27,7 @@ WARNFLAGSCXX    = \
         -Werror=uninitialized \
         -Werror=init-self \
         -Wfatal-errors \
-        -Wundef \
-        -Wno-unknown-warning-option
+        -Wundef
 
 DEPFLAGS        =   -MD -MP -MT $@
 

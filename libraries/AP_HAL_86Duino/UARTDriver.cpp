@@ -42,7 +42,11 @@ void UARTDriver::begin(uint32_t baud)
 void UARTDriver::begin(uint32_t baud, uint16_t rxS, uint16_t txS)
 {
     unsigned short crossbar_ioaddr = 0;
-    if(handle != NULL) return;
+    // close uart if opened
+    if(handle != NULL)
+    {
+        end();  // close it and re-open
+    }
 
     if (io_Init() == false) {
         printf("ERROR: IO init fail.\n");
