@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <signal.h>
 
 #include "HAL_86Duino_Class.h"
 #include "Scheduler.h"
@@ -21,6 +22,8 @@
 #include "io.h"
 #include "irq.h"
 #include "pins_arduino.h"
+
+unsigned _stklen = 4096 * 1024; // set stack to 4096k
 
 using namespace x86Duino;
 static Scheduler x86Scheduler;
@@ -40,7 +43,43 @@ static UARTDriver Serial3(COM3, 115200L, BYTESIZE8|NOPARITY|STOPBIT1, 0L, 500L);
 static UARTDriver Serial485(COM4, 115200L, BYTESIZE8|NOPARITY|STOPBIT1, 0L, 500L);
 static USBSerial usbUart;
 
-extern int wdt_count ;
+extern int wdt_count, timer_1k_count, spi_count, spi_mpu9250_count ,rc_in_count, uart_count;
+volatile bool in_loop = false ;
+
+void _86Duino_error_process(int num) {
+	int ledpin = 13;
+	// disable all irq except usb irq (5)
+	i8259_DisableIRQ(0);
+	i8259_DisableIRQ(1);
+	i8259_DisableIRQ(3);
+	i8259_DisableIRQ(4);
+	i8259_DisableIRQ(6);
+	i8259_DisableIRQ(7);
+	i8259_DisableIRQ(8);
+	i8259_DisableIRQ(9);
+	i8259_DisableIRQ(10);
+	i8259_DisableIRQ(11);
+	i8259_DisableIRQ(12);
+	i8259_DisableIRQ(13);
+	i8259_DisableIRQ(14);
+
+	// print error message
+	printf("\nOop, this program is crash :(\n");
+	printf("You may write a bug in your sketch, check and upload it again.\n");
+
+//	// led blink pattern
+//	pinMode(ledpin, OUTPUT);
+	while(1)
+	{
+//		error_led_blink(ledpin);
+	}
+}
+
+static __attribute__((constructor(101))) void _f_init()
+{
+	signal(SIGSEGV, _86Duino_error_process);
+	signal(SIGFPE, _86Duino_error_process);
+}
 
 HAL_86Duino::HAL_86Duino() :
     AP_HAL::HAL(
@@ -83,10 +122,6 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     // Force set HIGH speed ISA on SB
     sb_Write(SB_FCREG, sb_Read(SB_FCREG) | 0x8000C000L);
 
-    Serial1.begin(115200);
-    Serial2.begin(115200);
-    Serial3.begin(115200);
-    Serial485.begin(115200);
     // GPIO->init
     x86GPIO.init();
     // AD->init
@@ -99,7 +134,7 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 
     // set MCM IRQ
     if(irq_Init() == false) printf("MCM IRQ init fail\n");
-    if(irq_Setting(GetMCIRQ(), IRQ_LEVEL_TRIGGER + IRQ_DISABLE_INTR) == false)
+    if(irq_Setting(GetMCIRQ(), IRQ_LEVEL_TRIGGER | IRQ_DISABLE_INTR | IRQ_USE_FPU) == false)
         printf("MCM IRQ Setting fail\n");
 
     Set_MCIRQ(GetMCIRQ());
@@ -126,6 +161,29 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     scheduler->system_initialized();
 
     for (;;) {
+
+        x86Scheduler.run_spi_thread();
+        x86Scheduler.run_i2c_thread();
+        x86Scheduler.run_io();
+
+        static uint64_t next_loop_us = AP_HAL::micros64() + 2500;
+        if( next_loop_us < AP_HAL::micros64() )
+        {
+            next_loop_us = AP_HAL::micros64() + 2500;   // call loop at 400 hz (2500us)
+            in_loop = true ;
+            callbacks->loop();
+            in_loop = false ;
+        }
+
+//        static uint32_t alive_count = AP_HAL::millis();
+//        if( AP_HAL::millis() > alive_count + 1000 )
+//        {
+//            alive_count = AP_HAL::millis();
+////            usbUart.printf("alive: %d, 1k: %d, wdt: %d, spi: %d, mpu: %d\n", alive_count, timer_1k_count, wdt_count, spi_count, spi_mpu9250_count);
+//            usbUart.printf("alive: %d, 1k: %d, wdt: %d, rc_in: %d, uart: %d, spi: %d, mpu: %d\n"
+//                           , alive_count, timer_1k_count, wdt_count, rc_in_count, uart_count, spi_count, spi_mpu9250_count );
+//        }
+//        usbUart.printf("main..\n");
 //        x86Scheduler.delay(100);
 //        usbUart.printf("A: %d, B: %d, C: %d\n", Serial1.txspace(), Serial2.txspace(), Serial3.txspace());
 
@@ -178,11 +236,10 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 
 //        static auto _perf_write = x86Util.perf_alloc(AP_HAL::Util::PC_ELAPSED, "loop_time");
 //        x86Util.perf_begin(_perf_write);
-        callbacks->loop();
+//        callbacks->loop();
 //        x86Util.perf_end(_perf_write);
 //        x86Util._debug_counters();
 
-        x86Scheduler.run_io();
     }
 }
 

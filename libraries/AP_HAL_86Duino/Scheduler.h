@@ -36,11 +36,12 @@ public:
             uint32_t period_usec, AP_HAL::Device::PeriodicCb cb);
     void    run_spi_thread();
     void    run_i2c_thread();
+    volatile bool    initialized;
 private:
     volatile bool _timer_1k_enable, _timer_400hz_enable;
     volatile bool _timer_suspended;
     volatile bool _wdt_1k_enable;
-    bool    _initialized;
+
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
     AP_HAL::Proc _failsafe;

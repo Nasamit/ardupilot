@@ -13,6 +13,7 @@
 using namespace x86Duino;
 
 extern const AP_HAL::HAL& hal;
+extern volatile bool in_loop ;
 
 #define MC_1k 3     // 1k hz timer
 #define MD_1k 2
@@ -20,19 +21,22 @@ extern const AP_HAL::HAL& hal;
 #define WDTIRQ    (7)
 
 static int mcint_offset[3] = {0, 8, 16};
-int wdt_count = 0 ;
+int wdt_count = 0, timer_1k_count = 0 ;
+int spi_count = 0, spi_mpu9250_count = 0;
 
 // timer 1khz ISR'
-static char* isrname_one = "timer_1k";
+static char* isrname_one = (char*)"timer_1k";
 static int timer1k_isr_handler(int irq, void* data)
-{
+{    
     if((mc_inp(MC_1k, 0x04) & (PULSE_END_INT << mcint_offset[MD_1k])) == 0) return ISR_NONE;
     mc_outp(MC_1k, 0x04, (PULSE_END_INT << mcint_offset[MD_1k]));   // clear flag
-
+    timer_1k_count++;
+    
 //    static uint32_t count = 0 ;
 //    count++;
 //    if( count%500 == 0 )
 //    hal.gpio->toggle(13);
+    
     ((Scheduler*)hal.scheduler)->_run_timer_procs();
 
     return ISR_HANDLED;
@@ -49,7 +53,7 @@ static struct wdt_status {
 
     unsigned char reload_reg; // 0xAE
 } WDT_t;
-char* isrname_wdt = "TimerWDT";
+char * isrname_wdt = (char*) "TimerWDT";
 
 void wdt_settimer(unsigned long usec) {
     unsigned long ival;
@@ -76,20 +80,38 @@ void _wdt_disable(void) {
     io_outpb(0xa8, val & (~0x40));  // reset bit 6 to disable WDT1
 }
 
-static int timerwdt_isr_handler(int irq, void* data) {
-
+static int timerwdt_isr_handler(int irq, void* data) {    
     if((io_inpb(0xad) & 0x80) == 0) return ISR_NONE;
+    wdt_count++ ;
 
     io_outpb(0xad, 0x80); // clear timeout event bit
     _wdt_disable();
-    wdt_count++ ;
+    _wdt_enable();
 //    static uint32_t count = 0 ;
 //    count++;
 //    if( count%500 == 0 )
 //        hal.gpio->toggle(13);
-    ((Scheduler*)hal.scheduler)->run_spi_thread();
-    ((Scheduler*)hal.scheduler)->run_i2c_thread();
-    _wdt_enable();
+
+
+    if( ((Scheduler*)hal.scheduler)->initialized == false )
+    {
+//        ((Scheduler*)hal.scheduler)->run_spi_thread();
+        ((Scheduler*)hal.scheduler)->run_i2c_thread();
+        ((Scheduler*)hal.scheduler)->run_io();
+    }
+
+//    // check main loop status
+//    static uint64_t last_loop_out= AP_HAL::micros64() ;
+//    if( in_loop )
+//    {
+//        if( AP_HAL::micros64() - last_loop_out > 2500 )
+//        {
+//            // possiable stock at wait_for_sample()
+//            // run spi thread to get gyro & accel
+//            ((Scheduler*)hal.scheduler)->run_spi_thread();
+//        }
+//    }
+//    else    last_loop_out = AP_HAL::micros64();
 
     return ISR_HANDLED;
 }
@@ -100,7 +122,7 @@ Scheduler::Scheduler()
     _wdt_1k_enable = false;
     _in_timer_1k = false;
     _timer_suspended = false;
-    _initialized = false;
+    initialized = false;
 }
 
 void Scheduler::init()
@@ -147,10 +169,10 @@ void Scheduler::init()
     io_outpb(0xa9, 0x05 << 4); // use IRQ7
 
     // set time period
-    wdt_settimer(5000); // 200 hz
+    wdt_settimer(2000); // 500hz
 
     // setup WDT interupt
-    if(irq_Setting(WDTIRQ, IRQ_LEVEL_TRIGGER) == false)
+    if(irq_Setting(WDTIRQ, IRQ_LEVEL_TRIGGER | IRQ_USE_FPU) == false)
     {
         printf("WDT IRQ Setting fail\n"); return;
     }
@@ -193,7 +215,7 @@ void Scheduler::register_delay_callback(AP_HAL::Proc proc,
 {
     _delay_cb = proc;
     _min_delay_cb_ms = min_time_ms;
-    printf("registed _delay_cb %p, ms %d\n",proc ,min_time_ms);
+//    printf("registed _delay_cb %p, ms %d\n",proc ,min_time_ms);
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -207,6 +229,7 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
     if (_num_timer_procs < X86_SCHEDULER_MAX_TIMER_PROCS) {
         _timer_proc[_num_timer_procs] = proc;
         _num_timer_procs++;
+//        hal.console->printf("Timer processes %d\n",_num_timer_procs);
     } else {
         hal.console->printf("Out of timer processes\n");
     }
@@ -223,6 +246,7 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc)
     if (_num_io_procs < X86_SCHEDULER_MAX_TIMER_PROCS) {
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
+//        hal.console->printf("IO processes %d\n",_num_io_procs);
     } else {
         hal.console->printf("Out of IO processes\n");
     }
@@ -242,6 +266,7 @@ AP_HAL::Device::PeriodicHandle Scheduler::register_i2c_process(uint32_t period_u
         _i2c_proc[_num_i2c_procs].period_usec = period_usec;
         _i2c_proc[_num_i2c_procs].next_usec = AP_HAL::micros64()+period_usec;
         _num_i2c_procs++;
+//        hal.console->printf("I2C processes %d\n",_num_i2c_procs);
         return (&_i2c_proc[_num_i2c_procs]);
     } else {
         hal.console->printf("Out of I2C processes\n");
@@ -263,6 +288,7 @@ AP_HAL::Device::PeriodicHandle Scheduler::register_spi_process(uint32_t period_u
         _spi_proc[_num_spi_procs].period_usec = period_usec;
         _spi_proc[_num_spi_procs].next_usec = AP_HAL::micros64()+period_usec;
         _num_spi_procs++;
+//        hal.console->printf("SPI processes %d\n",_num_spi_procs);
         return (&_spi_proc[_num_spi_procs]);
     } else {
         hal.console->printf("Out of SPI processes\n");
@@ -306,16 +332,18 @@ void Scheduler::run_spi_thread(void)
 {
     _in_spi_proc = true;
 
+    spi_count++;
     // now call the SPI device driver
     for (int i = 0; i < _num_spi_procs; i++) {
         uint64_t now = AP_HAL::micros64() ;
         if ( now >= _spi_proc[i].next_usec)
         {
             while( now >= _spi_proc[i].next_usec ){
-                _spi_proc[i].next_usec += _spi_proc[i].period_usec ;
+                _spi_proc[i].next_usec += _spi_proc[i].period_usec ;                
             }
             // process!
             _spi_proc[i].cb();
+            spi_mpu9250_count++;
         }
     }
     _in_spi_proc = false;
@@ -342,11 +370,11 @@ bool Scheduler::in_timerprocess() {
 
 void Scheduler::system_initialized()
 {
-    if (_initialized) {
+    if (initialized) {
         AP_HAL::panic("PANIC: scheduler::system_initialized called"
                    "more than once");
     }
-    _initialized = true;
+    initialized = true;
 }
 
 void Scheduler::reboot(bool hold_in_bootloader)

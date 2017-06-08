@@ -40,7 +40,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
-#define debug(fmt, args ...)  do {printf("MPU: " fmt "\n", ## args); } while(0)
+#define debug(fmt, args ...)  do {hal.console->printf("MPU: " fmt "\n", ## args); } while(0)
 
 /*
   EXT_SYNC allows for frame synchronisation with an external device
@@ -493,6 +493,7 @@ bool AP_InertialSensor_Invensense::update()
 void AP_InertialSensor_Invensense::accumulate()
 {
     // nothing to do
+    _read_fifo();   // polling in 86duino
 }
 
 AuxiliaryBus *AP_InertialSensor_Invensense::get_auxiliary_bus()
@@ -541,7 +542,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
 #if INVENSENSE_EXT_SYNC_ENABLE
         fsync_set = (int16_val(data, 2) & 1U) != 0;
 #endif
-        
+
         accel = Vector3f(int16_val(data, 1),
                          int16_val(data, 0),
                          -int16_val(data, 2));
@@ -549,12 +550,12 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
 
         int16_t t2 = int16_val(data, 3);
         if (!_check_raw_temp(t2)) {
-            debug("temp reset %d %d", _raw_temp, t2);
+//            debug("temp reset %d %d", _raw_temp, t2);
             _fifo_reset();
             return false;
         }
         float temp = t2/340.0f + 36.53f;
-        
+
         gyro = Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
                         -int16_val(data, 6));
@@ -720,7 +721,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
         //debug("fifo reset n_samples %u", bytes_read/MPU_SAMPLE_SIZE);
         _fifo_reset();
     }
-    
+
 check_registers:
     // check next register value for correctness
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);

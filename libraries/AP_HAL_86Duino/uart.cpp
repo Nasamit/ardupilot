@@ -804,6 +804,7 @@ DMPAPI(void) uart_FlushWFIFO(void *vport)
     while ((io_inpb(port->LSR) & 0x60) != 0x60);
 }
 
+int uart_count = 0 ;
 static int UART_ISR(int irq, void *data)
 {
     int i;
@@ -814,6 +815,7 @@ static int UART_ISR(int irq, void *data)
 
     port  = (SerialPort *)data;
 
+    uart_count++;
     while (!((iir = io_inpb(port->IIR)) & 0x01))
     {
         ISR_Status = ISR_HANDLED;

@@ -68,7 +68,7 @@ struct SPIDesc {
 
 SPIDesc SPIDeviceManager::_device[] = {
     // different SPI tables per board subtype
-    SPIDesc("mpu9250",    0, 0, SPI_MODE3, 8, 9,  1*MHZ, 10*MHZ),
+    SPIDesc("mpu9250",    0, 0, SPI_MODE3, 8, 9,  1*MHZ, 20*MHZ),
     SPIDesc("ms5611",     0, 0, SPI_MODE3, 8, 8,  10*MHZ, 10*MHZ),
 };
 
@@ -145,14 +145,14 @@ void SPIBus::set_Speed(uint32_t speed) {
     }
     setClockDivider(clockDiv); // 50M~0.39Mhz
     _speed = speed;
-    //hal.uartB->printf("speed set!\n");
+//    hal.console->printf("speed set %d!\n",_speed);
 }
 
 void SPIBus::set_Mode(uint8_t mode)
 {
     io_outpb(SPI_IOaddr + 7, (io_inpb(SPI_IOaddr + 7) & 0xF1 )| mode); // set mode
     _mode = mode;
-    //hal.uartB->printf("mode set!\n");
+//    hal.console->printf("mode set!\n");
 }
 
 void SPIBus::WriteCLKDIVR(uint8_t data) {

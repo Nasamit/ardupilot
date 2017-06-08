@@ -27,7 +27,7 @@ void RCOutput::init()
 
 void RCOutput::init_channel( uint8_t ch, uint8_t pin, uint16_t freq_hz, uint16_t width)
 {
-    if( ch > PWM_MAX_CH )   return;
+    if( ch >= PWM_MAX_CH )   return;
     int mc, md;
     mc = PIN86[pin].PWMMC;
     md = PIN86[pin].PWMMD;
@@ -89,17 +89,20 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 }
 
 uint16_t RCOutput::get_freq(uint8_t ch) {
+    if( ch >= PWM_MAX_CH )   return 50 ;
     return CH_List[ch].freq ;
 }
 
 void RCOutput::enable_ch(uint8_t ch)
 {
+    if( ch >= PWM_MAX_CH )   return ;
     if( !CH_List[ch].enable )
         init_channel(ch, CH_List[ch].pin, CH_List[ch].freq, CH_List[ch].width);  // re-initialize
 }
 
 void RCOutput::disable_ch(uint8_t ch)
 {
+    if( ch >= PWM_MAX_CH )   return ;
     int mc, md;
     mc = PIN86[CH_List[ch].pin].PWMMC;
     md = PIN86[CH_List[ch].pin].PWMMD;
@@ -113,12 +116,14 @@ void RCOutput::disable_ch(uint8_t ch)
 
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
+    if( ch >= PWM_MAX_CH )   return ;
     CH_List[ch].width = period_us;
     if( !_cork_on ) PWM_output(ch);
 }
 
 void RCOutput::PWM_output(uint8_t ch)
 {
+    if( ch >= PWM_MAX_CH )   return ;
     int mc, md;
     mc = PIN86[CH_List[ch].pin].PWMMC;
     md = PIN86[CH_List[ch].pin].PWMMD;
@@ -132,6 +137,7 @@ void RCOutput::PWM_output(uint8_t ch)
 
 uint16_t RCOutput::read(uint8_t ch)
 {
+    if( ch >= PWM_MAX_CH )   return 0;
     return CH_List[ch].width;
 }
 

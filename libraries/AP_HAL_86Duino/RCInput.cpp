@@ -48,7 +48,7 @@ static bool _check_interrupt_enable(int mc, int bit) {
     return false;
 }
 
-
+int rc_in_count = 0 ;
 static int rcinput_int(int irq, void* data)
 {
     int i, mc, irq_handled = 0;
@@ -63,6 +63,7 @@ static int rcinput_int(int irq, void* data)
                     _check_interrupt_state(mc, SIFB_CAP1INTBIT+i) == true) // USER EVT
             {
                 _clear_interrupt_state(mc, SIFB_CAP1INTBIT+i);
+                rc_in_count++;
                 irq_handled |= 0x04;
 
                 while(readCapStat[i](mc, MCSIF_MODULEB) != MCPFAU_CAPFIFO_EMPTY)
@@ -95,6 +96,7 @@ static int rcinput_int(int irq, void* data)
     }
 
     if(irq_handled == 0x00) return ISR_NONE;
+
     return ISR_HANDLED;
 }
 
