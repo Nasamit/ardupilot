@@ -29,7 +29,8 @@ public:
     virtual ~AP_Compass_HMC5843();
 
     void read() override;
-
+    
+    void accumulate();
 private:
     AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
                        bool force_external, enum Rotation rotation);

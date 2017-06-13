@@ -469,8 +469,10 @@ void AP_InertialSensor_Invensense::start()
         AP_HAL::panic("Invensense: Unable to allocate FIFO buffer");
     }
 
+    #if CONFIG_HAL_BOARD != HAL_BOARD_86DUINO
     // start the timer process to read samples
     _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
+    #endif
 }
 
 
@@ -493,7 +495,15 @@ bool AP_InertialSensor_Invensense::update()
 void AP_InertialSensor_Invensense::accumulate()
 {
     // nothing to do
-    _read_fifo();   // polling in 86duino
+    #if CONFIG_HAL_BOARD == HAL_BOARD_86DUINO
+    // make reading from multi-thread to polling
+    static uint64_t last_t = 0 ;
+    if( AP_HAL::micros64() - last_t > 1000)
+    {
+        last_t = AP_HAL::micros64() ;
+        _read_fifo();   // polling in 86duino
+    }
+    #endif
 }
 
 AuxiliaryBus *AP_InertialSensor_Invensense::get_auxiliary_bus()
@@ -881,7 +891,8 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
         }
 
         /* bus-dependent initialization */
-        if ((_dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C) && (_mpu_type == Invensense_MPU9250)) {
+        if ((_dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C) && ((_mpu_type == Invensense_MPU9250) || 
+                                                                  (_mpu_type == Invensense_MPU6000) ) ){
             /* Enable I2C bypass to access internal AK8963 */
             _register_write(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN);
         }

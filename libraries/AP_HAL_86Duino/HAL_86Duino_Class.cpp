@@ -149,6 +149,7 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     x86Scheduler.init();
 
     // Storage init
+    Serial1.begin(115200);    
     x86Storage.init();
 
     // test zone
@@ -162,18 +163,19 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 
     for (;;) {
 
-        x86Scheduler.run_spi_thread();
-        x86Scheduler.run_i2c_thread();
+//        x86Scheduler.run_spi_thread();
+//        x86Scheduler.run_i2c_thread();    
         x86Scheduler.run_io();
 
-        static uint64_t next_loop_us = AP_HAL::micros64() + 2500;
-        if( next_loop_us < AP_HAL::micros64() )
-        {
-            next_loop_us = AP_HAL::micros64() + 2500;   // call loop at 400 hz (2500us)
-            in_loop = true ;
-            callbacks->loop();
-            in_loop = false ;
-        }
+        callbacks->loop();  // use polling - self control frequency
+//        static uint64_t next_loop_us = AP_HAL::micros64() + 2500;
+//        if( next_loop_us < AP_HAL::micros64() )
+//        {
+//            next_loop_us = AP_HAL::micros64() + 2500;   // call loop at 400 hz (2500us)
+//            in_loop = true ;
+//            callbacks->loop();
+//            in_loop = false ;
+//        }
 
 //        static uint32_t alive_count = AP_HAL::millis();
 //        if( AP_HAL::millis() > alive_count + 1000 )

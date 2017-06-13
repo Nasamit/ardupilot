@@ -473,7 +473,7 @@ TX_SUCCESS:
     }
     if ((statreg & 0x10) != 0) //if (i2cmaster_CheckAckErr(dev) == true)
     {
-        err_print("receive no ACK after transmitting, ADD:%x\n",I2C_curAddr[0]);
+//        err_print("receive no ACK after transmitting, ADD:%x\n",I2C_curAddr[0]);
         i2cmaster_ClearAckErr(dev);
     }
     if ((statreg & (0x10 + 0x08)) != 0) return false;

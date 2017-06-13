@@ -96,8 +96,8 @@ static int timerwdt_isr_handler(int irq, void* data) {
     if( ((Scheduler*)hal.scheduler)->initialized == false )
     {
 //        ((Scheduler*)hal.scheduler)->run_spi_thread();
-        ((Scheduler*)hal.scheduler)->run_i2c_thread();
-        ((Scheduler*)hal.scheduler)->run_io();
+//        ((Scheduler*)hal.scheduler)->run_i2c_thread();
+//        ((Scheduler*)hal.scheduler)->run_io();
     }
 
 //    // check main loop status

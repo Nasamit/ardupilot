@@ -207,9 +207,11 @@ bool AP_Compass_HMC5843::init()
         set_external(_compass_instance, true);
     }
 
+    #if CONFIG_HAL_BOARD != HAL_BOARD_86DUINO
     // read from sensor at 75Hz
     _bus->register_periodic_callback(13333,
                                      FUNCTOR_BIND_MEMBER(&AP_Compass_HMC5843::_timer, void));
+    #endif
 
     hal.console->printf("HMC5843 found on bus 0x%x\n", _bus->get_bus_id());
     
@@ -218,6 +220,18 @@ bool AP_Compass_HMC5843::init()
 errout:
     bus_sem->give();
     return false;
+}
+
+void AP_Compass_HMC5843::accumulate(void) 
+{
+    #if CONFIG_HAL_BOARD == HAL_BOARD_86DUINO
+    static uint64_t last_t = AP_HAL::micros64();
+    if( AP_HAL::micros64() - last_t > 13333)
+    {
+        last_t = AP_HAL::micros64();        
+        _timer();
+    }
+    #endif
 }
 
 /*
@@ -297,6 +311,7 @@ void AP_Compass_HMC5843::read()
     
     if (_accum_count == 0) {
         _sem->give();
+        accumulate();
         return;
     }
 

@@ -143,9 +143,11 @@ bool AP_Baro_MS56XX::_init()
     
     _dev->get_semaphore()->give();
 
+    #if CONFIG_HAL_BOARD != HAL_BOARD_86DUINO
     /* Request 100Hz update */
     _dev->register_periodic_callback(10 * USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void));
+    #endif
     return true;
 }
 
@@ -271,7 +273,7 @@ void AP_Baro_MS56XX::_timer(void)
 {
     uint8_t next_cmd;
     uint8_t next_state;
-    uint32_t adc_val = _read_adc();
+    uint32_t adc_val = _read_adc();    
 
     /*
      * If read fails, re-initiate a read command for current state or we are
@@ -313,7 +315,19 @@ void AP_Baro_MS56XX::_timer(void)
         }
         _sem->give();
         _state = next_state;
+    }    
+}
+
+void AP_Baro_MS56XX::accumulate(void) 
+{
+    #if CONFIG_HAL_BOARD == HAL_BOARD_86DUINO
+    static uint64_t last_t = AP_HAL::micros64();
+    if( AP_HAL::micros64() - last_t > 10*USEC_PER_MSEC)
+    {
+        last_t = AP_HAL::micros64();        
+        _timer();
     }
+    #endif
 }
 
 void AP_Baro_MS56XX::_update_and_wrap_accumulator(uint32_t *accum, uint32_t val,
@@ -336,8 +350,9 @@ void AP_Baro_MS56XX::update()
         return;
     }
 
-    if (_accum.d1_count == 0) {
+    if (_accum.d1_count == 0) {                
         _sem->give();
+        accumulate();
         return;
     }
 
