@@ -69,7 +69,7 @@ struct SPIDesc {
 SPIDesc SPIDeviceManager::_device[] = {
     // different SPI tables per board subtype
     SPIDesc("mpu9250",    0, 0, SPI_MODE3, 8, 9,  1*MHZ, 20*MHZ),
-    SPIDesc("ms5611",     0, 0, SPI_MODE3, 8, 8,  10*MHZ, 10*MHZ),
+    SPIDesc("bmp280",     0, 0, SPI_MODE3, 8, 8,  10*MHZ, 10*MHZ),
 };
 
 const uint8_t SPIDeviceManager::_n_device_desc = ARRAY_SIZE(SPIDeviceManager::_device);

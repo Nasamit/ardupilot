@@ -215,7 +215,7 @@ void Scheduler::register_delay_callback(AP_HAL::Proc proc,
 {
     _delay_cb = proc;
     _min_delay_cb_ms = min_time_ms;
-//    printf("registed _delay_cb %p, ms %d\n",proc ,min_time_ms);
+//    hal.console->printf("registed _delay_cb %p, ms %d\n",proc ,min_time_ms);
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)

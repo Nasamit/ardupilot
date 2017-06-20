@@ -114,8 +114,10 @@ bool AP_Baro_BMP280::_init()
 
     _dev->get_semaphore()->give();
 
+    #if CONFIG_HAL_BOARD != HAL_BOARD_86DUINO
     // request 50Hz update
     _dev->register_periodic_callback(20 * USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
+    #endif
 
     return true;
 }
@@ -133,12 +135,25 @@ void AP_Baro_BMP280::_timer(void)
     _update_pressure((buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4));
 }
 
+void AP_Baro_BMP280::accumulate(void)
+{
+    #if CONFIG_HAL_BOARD == HAL_BOARD_86DUINO
+    static uint64_t last_t = AP_HAL::micros64();
+    if( AP_HAL::micros64() - last_t > 20*USEC_PER_MSEC)
+    {
+        last_t = AP_HAL::micros64();
+        _timer();
+    }
+    #endif
+}
+
 // transfer data to the frontend
 void AP_Baro_BMP280::update(void)
 {
     if (_sem->take_nonblocking()) {
         if (!_has_sample) {
             _sem->give();
+            accumulate();
             return;
         }
 

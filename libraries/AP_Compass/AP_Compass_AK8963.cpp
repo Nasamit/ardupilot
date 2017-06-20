@@ -167,11 +167,13 @@ bool AP_Compass_AK8963::init()
 
     bus_sem->give();
 
+    #if CONFIG_HAL_BOARD != HAL_BOARD_86DUINO
     /* timer needs to be called every 10ms so set the freq_div to 10 */
     if (!_bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void))) {
         // fallback to timer
         _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update_timer, void), 10);
     }
+    #endif
 
     return true;
 
@@ -190,6 +192,7 @@ void AP_Compass_AK8963::read()
         if (_accum_count == 0) {
             /* We're not ready to publish */
             _sem->give();
+            accumulate();
             return;
         }
 
@@ -199,6 +202,18 @@ void AP_Compass_AK8963::read()
         _sem->give();
         publish_filtered_field(field, _compass_instance);
     }
+}
+
+void AP_Compass_AK8963::accumulate(void)
+{
+    #if CONFIG_HAL_BOARD == HAL_BOARD_86DUINO
+    static uint64_t last_t = AP_HAL::micros64();
+    if( AP_HAL::micros64() - last_t > 10000)
+    {
+        last_t = AP_HAL::micros64();
+        _update();
+    }
+    #endif
 }
 
 void AP_Compass_AK8963::_make_adc_sensitivity_adjustment(Vector3f& field) const

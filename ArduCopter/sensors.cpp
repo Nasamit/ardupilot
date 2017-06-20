@@ -100,11 +100,23 @@ void Copter::rpm_update(void)
 // initialise compass
 void Copter::init_compass()
 {
-    if (!compass.init() || !compass.read()) {
-        // make sure we don't pass a broken compass to DCM
-        cliSerial->printf("COMPASS INIT ERROR\n");
-        Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
-        return;
+    if (!compass.init() || !compass.read() ) {
+        // try to accumulate
+        int i = 0 ;
+        while( i < 10 )
+        {
+            i++;
+            compass.accumulate() ;
+            hal.scheduler->delay(10);
+        }
+        // if still fail...
+        if( !compass.read() )
+        {
+            // make sure we don't pass a broken compass to DCM
+            cliSerial->printf("COMPASS INIT ERROR\n");
+            Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
+            return;
+        }
     }
     ahrs.set_compass(&compass);
 }

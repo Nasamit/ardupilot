@@ -37,6 +37,7 @@ public:
 
     void read() override;
 
+    void accumulate();
 private:
     AP_Compass_AK8963(Compass &compass, AP_AK8963_BusDriver *bus,
                       enum Rotation rotation = ROTATION_NONE);
