@@ -5,6 +5,7 @@
 
 #include <stdarg.h>
 #include <time.h>
+#include <fcntl.h>
 
 #include "io.h"
 #include "mcm.h"
@@ -129,6 +130,10 @@ void Scheduler::init()
 {
     if(_timer_1k_enable) return;
 
+    // setup file name case
+    setenv("FNCASE", "y", 1);
+    // set default file open mode
+    _fmode = O_BINARY;    
     // setup Time Zone
     setenv("TZ", "", 1);   // set TZ system variable (set to GMT+0)
     tzset();    // setup time zone
