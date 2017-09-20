@@ -21,6 +21,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class OpticalFlow_backend;
 class AP_AHRS_NavEKF;
@@ -74,6 +75,11 @@ public:
     const Vector3f &get_pos_offset(void) const {
         return _pos_offset;
     }
+    
+    
+    // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled optical flow)
+    void handle_msg(mavlink_message_t *msg);
+    
 
 private:
     AP_AHRS_NavEKF &_ahrs;

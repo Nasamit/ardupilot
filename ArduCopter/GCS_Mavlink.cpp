@@ -1796,6 +1796,15 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     }
 #endif //  HIL_MODE != HIL_MODE_DISABLED
 
+    case MAVLINK_MSG_ID_OPTICAL_FLOW:       // MAV ID: 100
+    {
+        result = MAV_RESULT_ACCEPTED;
+        copter.optflow.handle_msg(msg);
+//        hal.console->printf("get optical flow\n");
+    }
+        
+        break;
+        
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:       // MAV ID: 109
     {
