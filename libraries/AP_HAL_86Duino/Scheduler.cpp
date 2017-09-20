@@ -373,6 +373,10 @@ bool Scheduler::in_timerprocess() {
     return _in_timer_1k;
 }
 
+bool Scheduler::in_main_thread() const {
+    return true;
+}
+
 void Scheduler::system_initialized()
 {
     if (initialized) {

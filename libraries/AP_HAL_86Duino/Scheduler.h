@@ -8,24 +8,24 @@
 class x86Duino::Scheduler : public AP_HAL::Scheduler {
 public:
     Scheduler();
-    void     init();
-    void     delay(uint16_t ms);
-    void     delay_microseconds(uint16_t us);
+    void     init() override;
+    void     delay(uint16_t ms) override;
+    void     delay_microseconds(uint16_t us) override;
     void     register_delay_callback(AP_HAL::Proc proc,
-                uint16_t min_time_ms);
+                uint16_t min_time_ms) override;
 
-    void     register_timer_process(AP_HAL::MemberProc proc);
-    void     register_io_process(AP_HAL::MemberProc proc);
-    void     suspend_timer_procs();
-    void     resume_timer_procs();
+    void     register_timer_process(AP_HAL::MemberProc proc) override;
+    void     register_io_process(AP_HAL::MemberProc proc) override;
+    void     suspend_timer_procs() override;
+    void     resume_timer_procs() override;
 
-    bool     in_timerprocess();
+    bool     in_main_thread() const override;
 
-    void     register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us);
+    void     register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us) override;
 
-    void     system_initialized();
+    void     system_initialized() override;
 
-    void     reboot(bool hold_in_bootloader);
+    void     reboot(bool hold_in_bootloader) override;
     void    _run_timer_procs(void);
     void     run_io();
 
@@ -64,4 +64,6 @@ private:
     uint8_t _num_spi_procs, _num_i2c_procs;
     volatile bool _in_i2c_proc;
     volatile bool _in_spi_proc;
+    
+    bool in_timerprocess();
 };

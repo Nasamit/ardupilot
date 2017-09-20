@@ -99,7 +99,8 @@ HAL_86Duino::HAL_86Duino() :
         &x86RCOutput,      /* rcoutput */
         &x86Scheduler,     /* scheduler */
         &x86Util,      /* util */
-        nullptr) /* onboard optical flow */
+        nullptr, /* onboard optical flow */
+        nullptr) /* CAN bus */
 {}
 
 void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const

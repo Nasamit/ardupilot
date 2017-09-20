@@ -46,4 +46,9 @@ inline float fmaxf( float x, float y )
 //    return ( __builtin_fmaxf(x, y) );
     return (x > y ? x : y) ;
 };
+
+inline float fminf( float x, float y )
+{
+    return (x < y ? x : y) ;
+};
 #endif

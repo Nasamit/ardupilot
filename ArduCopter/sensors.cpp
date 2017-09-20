@@ -116,7 +116,7 @@ void Copter::init_compass()
         if( !compass.read() )
         {
             // make sure we don't pass a broken compass to DCM
-            cliSerial->printf("COMPASS INIT ERROR\n");
+            gcs().send_text(MAV_SEVERITY_INFO, "COMPASS INIT ERROR\n");
             Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
             return;
         }

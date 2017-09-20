@@ -323,7 +323,7 @@ void AP_Baro_MS56XX::accumulate(void)
 {
     #if CONFIG_HAL_BOARD == HAL_BOARD_86DUINO
     static uint64_t last_t = AP_HAL::micros64();
-    if( AP_HAL::micros64() - last_t > 10*USEC_PER_MSEC)
+    if( AP_HAL::micros64() - last_t > 10*AP_USEC_PER_MSEC)
     {
         last_t = AP_HAL::micros64();        
         _timer();
