@@ -54,6 +54,7 @@
 
 class ReplayVehicle {
 public:
+    ReplayVehicle() { unused = -1; }
     void setup();
     void load_parameters(void);
 
@@ -69,7 +70,8 @@ public:
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
-    DataFlash_Class dataflash{"Replay v0.1"};
+    AP_Int32 unused; // logging is magic for Replay; this is unused
+    DataFlash_Class dataflash{"Replay v0.1", unused};
 
 private:
     Parameters g;
@@ -92,6 +94,7 @@ public:
     void loop() override;
 
     void flush_dataflash(void);
+    void show_packet_counts();
 
     bool check_solution = false;
     const char *log_filename = NULL;
@@ -140,6 +143,7 @@ private:
     bool logmatch = false;
     uint32_t output_counter = 0;
     uint64_t last_timestamp = 0;
+    bool packet_counts = false;
 
     struct {
         float max_roll_error;

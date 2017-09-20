@@ -49,9 +49,7 @@
 #define MAGNETOMETER ENABLED
 
 // run at 400Hz on all systems
-# define MAIN_LOOP_RATE    400
 # define MAIN_LOOP_SECONDS 0.0025f
-# define MAIN_LOOP_MICROS  2500
 
 #ifndef ARMING_DELAY_SEC
     # define ARMING_DELAY_SEC 2.0f
@@ -215,9 +213,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  OPTICAL_FLOW
+//  OPTICAL_FLOW & VISUAL ODOMETRY
 #ifndef OPTFLOW
  # define OPTFLOW       ENABLED
+#endif
+#ifndef VISUAL_ODOMETRY_ENABLED
+# define VISUAL_ODOMETRY_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -633,11 +634,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
-
-// use this to completely disable the CLI
-#ifndef CLI_ENABLED
-  #  define CLI_ENABLED           ENABLED
-#endif
 
 //use this to completely disable FRSKY TELEM
 #ifndef FRSKY_TELEM_ENABLED

@@ -79,7 +79,7 @@ AP_GPS_ERB::read(void)
             }
             _step = 0;
             Debug("reset %u", __LINE__);
-            /* no break */
+            FALLTHROUGH;
         case 0:
             if(PREAMBLE1 == data)
                 _step++;
@@ -223,17 +223,6 @@ AP_GPS_ERB::_parse_gps(void)
     return false;
 }
 
-void
-AP_GPS_ERB::inject_data(const uint8_t *data, uint16_t len)
-{
-
-    if (port->txspace() > len) {
-        port->write(data, len);
-    } else {
-        Debug("ERB: Not enough TXSPACE");
-    }
-}
-
 /*
   detect a ERB GPS. Adds one byte, and returns true if the stream
   matches a ERB
@@ -249,7 +238,7 @@ reset:
                 break;
             }
             state.step = 0;
-            /* no break */
+            FALLTHROUGH;
         case 0:
             if (PREAMBLE1 == data)
                 state.step++;

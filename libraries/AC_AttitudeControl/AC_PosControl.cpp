@@ -293,7 +293,7 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
             stopping_point.z = curr_pos_z - (linear_distance + curr_vel_z*curr_vel_z/(2.0f*_accel_z_cms));
         }
     }
-    stopping_point.z = constrain_float(stopping_point.z, curr_pos_z - POSCONTROL_STOPPING_DIST_Z_MAX, curr_pos_z + POSCONTROL_STOPPING_DIST_Z_MAX);
+    stopping_point.z = constrain_float(stopping_point.z, curr_pos_z - POSCONTROL_STOPPING_DIST_DOWN_MAX, curr_pos_z + POSCONTROL_STOPPING_DIST_UP_MAX);
 }
 
 /// init_takeoff - initialises target altitude if we are taking off
@@ -723,11 +723,11 @@ void AC_PosControl::init_vel_controller_xyz()
     init_ekf_z_reset();
 }
 
-/// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
-///     velocity targets should we set using set_desired_velocity_xyz() method
+/// update_velocity_controller_xy - run the velocity controller - should be called at 100hz or higher
+///     velocity targets should we set using set_desired_velocity_xy() method
 ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
 ///     throttle targets will be sent directly to the motors
-void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
+void AC_PosControl::update_vel_controller_xy(float ekfNavVelGainScaler)
 {
     // capture time since last iteration
     uint32_t now = AP_HAL::millis();
@@ -761,6 +761,16 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
         // update xy update time
         _last_update_xy_ms = now;
     }
+}
+
+
+/// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
+///     velocity targets should we set using set_desired_velocity_xyz() method
+///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
+///     throttle targets will be sent directly to the motors
+void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
+{
+    update_vel_controller_xy(ekfNavVelGainScaler);
 
     // update altitude target
     set_alt_target_from_climb_rate_ff(_vel_desired.z, _dt, false);

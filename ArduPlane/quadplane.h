@@ -28,7 +28,6 @@ public:
     void control_auto(const Location &loc);
     bool init_mode(void);
     bool setup(void);
-    void setup_defaults(void);
 
     void vtol_position_controller(void);
     void setup_target_position(void);
@@ -89,6 +88,9 @@ public:
     
     // check if we have completed transition
     bool tailsitter_transition_complete(void);
+
+    // user initiated takeoff for guided mode
+    bool do_user_takeoff(float takeoff_altitude);
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -97,13 +99,13 @@ public:
         float    throttle_out;
         float    desired_alt;
         float    inav_alt;
-        int32_t  baro_alt;
         int16_t  desired_climb_rate;
         int16_t  climb_rate;
         float    dvx;
         float    dvy;
         float    dax;
         float    day;
+        float    throttle_mix;
     };
         
 private:
@@ -122,6 +124,8 @@ private:
     AP_Int8 frame_type;
     
     AP_MotorsMulticopter *motors;
+    const struct AP_Param::GroupInfo *motors_var_info;
+    
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
@@ -138,6 +142,9 @@ private:
     // update transition handling
     void update_transition(void);
 
+    // check for an EKF yaw reset
+    void check_yaw_reset(void);
+    
     // hold hover (for transition)
     void hold_hover(float target_climb_rate);    
 
@@ -194,6 +201,9 @@ private:
     void check_throttle_suppression(void);
 
     void run_z_controller(void);
+
+    void setup_defaults(void);
+    void setup_defaults_table(const struct defaults_struct *defaults, uint8_t count);
     
     AP_Int16 transition_time_ms;
 
@@ -238,7 +248,10 @@ private:
 
     // ICEngine control on landing
     AP_Int8 land_icengine_cut;
-    
+
+    // time we last got an EKF yaw reset
+    uint32_t ekfYawReset_ms;
+
     struct {
         AP_Float gain;
         float integrator;
@@ -263,6 +276,9 @@ private:
     // last throttle value when active
     float last_throttle;
 
+    // pitch when we enter loiter mode
+    int32_t loiter_initial_pitch_cd;
+    
     const float smoothing_gain = 6;
 
     // true if we have reached the airspeed threshold for transition
@@ -281,6 +297,9 @@ private:
 
     // true when in angle assist
     bool in_angle_assist:1;
+
+    // are we in a guided takeoff?
+    bool guided_takeoff:1;
 
     struct {
         // time when motors reached lower limit
@@ -322,7 +341,9 @@ private:
     uint32_t last_ctrl_log_ms;
 
     // types of tilt mechanisms
-    enum {TILT_TYPE_CONTINUOUS=0, TILT_TYPE_BINARY=1};
+    enum {TILT_TYPE_CONTINUOUS=0,
+          TILT_TYPE_BINARY=1,
+          TILT_TYPE_VECTORED_YAW=2};
     
     // tiltrotor control variables
     struct {
@@ -331,6 +352,7 @@ private:
         AP_Int16 max_rate_down_dps;
         AP_Int8  max_angle_deg;
         AP_Int8  tilt_type;
+        AP_Float tilt_yaw_angle;
         float current_tilt;
         float current_throttle;
         bool motors_active:1;
@@ -354,6 +376,9 @@ private:
         AP_Int8 input_type;
         AP_Int8 input_mask;
         AP_Int8 input_mask_chan;
+        AP_Float vectored_forward_gain;
+        AP_Float vectored_hover_gain;
+        AP_Float vectored_hover_power;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller
@@ -364,12 +389,14 @@ private:
 
     // time when we last ran the vertical accel controller
     uint32_t last_pidz_active_ms;
+    uint32_t last_pidz_init_ms;
     
     void tiltrotor_slew(float tilt);
     void tiltrotor_binary_slew(bool forward);
     void tiltrotor_update(void);
     void tiltrotor_continuous_update(void);
     void tiltrotor_binary_update(void);
+    void tiltrotor_vectored_yaw(void);
     void tilt_compensate_up(float *thrust, uint8_t num_motors);
     void tilt_compensate_down(float *thrust, uint8_t num_motors);
     void tilt_compensate(float *thrust, uint8_t num_motors);
@@ -381,6 +408,12 @@ private:
 
     void afs_terminate(void);
     bool guided_mode_enabled(void);
+
+    // set altitude target to current altitude
+    void set_alt_target_current(void);
+    
+    // adjust altitude target smoothly
+    void adjust_alt_target(float target_cm);
     
 public:
     void motor_test_output();

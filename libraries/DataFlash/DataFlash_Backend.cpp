@@ -53,6 +53,7 @@ void DataFlash_Backend::periodic_tasks()
 void DataFlash_Backend::start_new_log_reset_variables()
 {
     _startup_messagewriter->reset();
+    _front.backend_starting_new_log(this);
 }
 
 void DataFlash_Backend::internal_error() {
@@ -83,6 +84,12 @@ bool DataFlash_Backend::WriteBlockCheckStartupMessages()
     if (_writing_startup_messages) {
         // we have been called by a messagewriter, so writing is OK
         return true;
+    }
+
+    if (!_startup_messagewriter->finished() &&
+        !hal.scheduler->in_main_thread()) {
+        // only the main thread may write startup messages out
+        return false;
     }
 
     // we're not writing startup messages, so this must be some random
@@ -257,4 +264,56 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
     }
 
     return WritePrioritisedBlock(buffer, msg_len, is_critical);
+}
+
+bool DataFlash_Backend::StartNewLogOK() const
+{
+    if (logging_started()) {
+        return false;
+    }
+    if (_front._log_bitmask == 0) {
+        return false;
+    }
+    if (_front.in_log_download()) {
+        return false;
+    }
+    if (!hal.scheduler->in_main_thread()) {
+        return false;
+    }
+    return true;
+}
+
+bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+{
+    if (!ShouldLog()) {
+        return false;
+    }
+    if (StartNewLogOK()) {
+        start_new_log();
+    }
+    if (!WritesOK()) {
+        return false;
+    }
+    return _WritePrioritisedBlock(pBuffer, size, is_critical);
+}
+
+bool DataFlash_Backend::ShouldLog() const
+{
+    if (!_front.WritesEnabled()) {
+        return false;
+    }
+    if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
+        return false;
+    }
+    if (!_initialised) {
+        return false;
+    }
+
+    if (!_startup_messagewriter->finished() &&
+        !hal.scheduler->in_main_thread()) {
+        // only the main thread may write startup messages out
+        return false;
+    }
+
+    return true;
 }

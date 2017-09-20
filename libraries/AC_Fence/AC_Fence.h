@@ -40,7 +40,7 @@ public:
     AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav);
 
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
-    void enable(bool true_false) { _enabled = true_false; }
+    void enable(bool value);
 
     /// enabled - returns true if fence is enabled
     bool enabled() const { return _enabled; }
@@ -49,7 +49,7 @@ public:
     uint8_t get_enabled_fences() const;
 
     /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
-    bool pre_arm_check() const;
+    bool pre_arm_check(const char* &fail_msg) const;
 
     ///
     /// methods to check we are within the boundaries and recover
@@ -112,7 +112,7 @@ public:
     bool boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points) const;
 
     /// handler for polygon fence messages with GCS
-    void handle_msg(mavlink_channel_t chan, mavlink_message_t* msg);
+    void handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg);
 
     static const struct AP_Param::GroupInfo var_info[];
 

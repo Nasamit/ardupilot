@@ -2,13 +2,13 @@
 
 void Copter::init_barometer(bool full_calibration)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
+    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     if (full_calibration) {
         barometer.calibrate();
     }else{
         barometer.update_calibration();
     }
-    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
+    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 
 // return barometric altitude in centimeters
@@ -100,7 +100,10 @@ void Copter::rpm_update(void)
 // initialise compass
 void Copter::init_compass()
 {
-    if (!compass.init() || !compass.read() ) {
+    if (!g.compass_enabled) {
+        return;
+    }
+ if (!compass.init() || !compass.read() ) {
         // try to accumulate
         int i = 0 ;
         while( i < 10 )
@@ -121,15 +124,32 @@ void Copter::init_compass()
     ahrs.set_compass(&compass);
 }
 
+/*
+  if the compass is enabled then try to accumulate a reading
+  also update initial location used for declination
+ */
+void Copter::compass_accumulate(void)
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    compass.accumulate();
+
+    // update initial location used for declination
+    if (!ap.compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            ap.compass_init_location = true;
+        }
+    }
+}
+
 // initialise optical flow sensor
 void Copter::init_optflow()
 {
 #if OPTFLOW == ENABLED
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
     // initialise optical flow sensor
     optflow.init();
 #endif      // OPTFLOW == ENABLED
@@ -182,6 +202,8 @@ void Copter::read_battery(void)
     }
     if (battery.has_current()) {
         motors->set_current(battery.current_amps());
+        motors->set_resistance(battery.get_resistance());
+        motors->set_voltage_resting_estimate(battery.voltage_resting_estimate());
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
@@ -310,6 +332,11 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    if (g2.visual_odom.enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+    }
+#endif
     if (ap.rc_receiver_present) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
@@ -344,6 +371,7 @@ void Copter::update_sensor_status_flags(void)
     case POSHOLD:
     case BRAKE:
     case THROW:
+    case SMART_RTL:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
@@ -394,7 +422,12 @@ void Copter::update_sensor_status_flags(void)
     }
 #endif
 #if PRECISION_LANDING == ENABLED
-    if (!precland.healthy()) {
+    if (precland.enabled() && !precland.healthy()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+    }
+#endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    if (g2.visual_odom.enabled() && !g2.visual_odom.healthy()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
@@ -472,4 +505,35 @@ void Copter::init_beacon()
 void Copter::update_beacon()
 {
     g2.beacon.update();
+}
+
+// init visual odometry sensor
+void Copter::init_visual_odom()
+{
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    g2.visual_odom.init();
+#endif
+}
+
+// update visual odometry sensor
+void Copter::update_visual_odom()
+{
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    // check for updates
+    if (g2.visual_odom.enabled() && (g2.visual_odom.get_last_update_ms() != visual_odom_last_update_ms)) {
+        visual_odom_last_update_ms = g2.visual_odom.get_last_update_ms();
+        float time_delta_sec = g2.visual_odom.get_time_delta_usec() / 1000000.0f;
+        ahrs.writeBodyFrameOdom(g2.visual_odom.get_confidence(),
+                                g2.visual_odom.get_position_delta(),
+                                g2.visual_odom.get_angle_delta(),
+                                time_delta_sec,
+                                visual_odom_last_update_ms,
+                                g2.visual_odom.get_pos_offset());
+        // log sensor data
+        DataFlash.Log_Write_VisualOdom(time_delta_sec,
+                                       g2.visual_odom.get_angle_delta(),
+                                       g2.visual_odom.get_position_delta(),
+                                       g2.visual_odom.get_confidence());
+    }
+#endif
 }

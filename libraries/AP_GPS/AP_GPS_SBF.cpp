@@ -21,6 +21,7 @@
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -64,7 +65,8 @@ AP_GPS_SBF::read(void)
 
         if (now > _init_blob_time) {
             port->write((const uint8_t*)init_str, strlen(init_str));
-            _init_blob_time = now + 1000;
+            // if this is too low a race condition on start occurs and the GPS isn't detected
+            _init_blob_time = now + 2000;
         }
     }
 
@@ -128,16 +130,25 @@ AP_GPS_SBF::parse(uint8_t temp)
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
                 Debug("bad packet length=%u\n", (unsigned)sbf_msg.length);
             }
-            break;
-        case sbf_msg_parser_t::DATA:
-            if (sbf_msg.read >= sizeof(sbf_msg.data)) {
-                Debug("parse overflow length=%u\n", (unsigned)sbf_msg.read);
+            if (sbf_msg.length < 8) {
+                Debug("bad packet length=%u\n", (unsigned)sbf_msg.length);
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                crc_error_counter++; // this is a probable buffer overflow, but this
+                                     // indicates not enough bytes to do a crc
                 break;
             }
-            sbf_msg.data.bytes[sbf_msg.read] = temp;
+            break;
+        case sbf_msg_parser_t::DATA:
+            if (sbf_msg.read < sizeof(sbf_msg.data)) {
+                sbf_msg.data.bytes[sbf_msg.read] = temp;
+            }
             sbf_msg.read++;
             if (sbf_msg.read >= (sbf_msg.length - 8)) {
+                if (sbf_msg.read > sizeof(sbf_msg.data)) {
+                    // not interested in these large messages
+                    sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                    break;
+                }
                 uint16_t crc = crc16_ccitt((uint8_t*)&sbf_msg.blockid, 2, 0);
                 crc = crc16_ccitt((uint8_t*)&sbf_msg.length, 2, crc);
                 crc = crc16_ccitt((uint8_t*)&sbf_msg.data, sbf_msg.length - 8, crc);
@@ -160,7 +171,7 @@ AP_GPS_SBF::parse(uint8_t temp)
 void
 AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
 {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
         return;
     }
 
@@ -183,22 +194,22 @@ AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
         COG:temp.COG
     };
 
-    gps._DataFlash->WriteBlock(&header, sizeof(header));
+    DataFlash_Class::instance()->WriteBlock(&header, sizeof(header));
 }
 
 bool
 AP_GPS_SBF::process_message(void)
 {
-    uint16_t blockid = (sbf_msg.blockid & 4095u);
+    uint16_t blockid = (sbf_msg.blockid & 8191u);
 
     Debug("BlockID %d", blockid);
 
-    // ExtEventPVTGeodetic
-    if (blockid == 4038) {
+    switch (blockid) {
+    case ExtEventPVTGeodetic:
         log_ExtEventPVTGeodetic(sbf_msg.data.msg4007u);
-    }
-    // PVTGeodetic
-    if (blockid == 4007) {
+        break;
+    case PVTGeodetic:
+    {
         const msg4007 &temp = sbf_msg.data.msg4007u;
 
         // Update time state
@@ -208,8 +219,6 @@ AP_GPS_SBF::process_message(void)
         }
 
         state.last_gps_time_ms = AP_HAL::millis();
-
-        state.hdop = last_hdop;
 
         // Update velocity state (don't use −2·10^10)
         if (temp.Vn > -200000) {
@@ -223,7 +232,8 @@ AP_GPS_SBF::process_message(void)
             state.ground_speed = (float)safe_sqrt(ground_vector_sq);
 
             state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
-            
+            state.rtk_age_ms = temp.MeanCorrAge * 10;
+
             // value is expressed as twice the rms error = int16 * 0.01/2
             state.horizontal_accuracy = (float)temp.HAccuracy * 0.005f;
             state.vertical_accuracy = (float)temp.VAccuracy * 0.005f;
@@ -273,33 +283,59 @@ AP_GPS_SBF::process_message(void)
                 break;
         }
         
-        if ((temp.Mode & 64) > 0) // gps is in base mode
+        if ((temp.Mode & 64) > 0) { // gps is in base mode
             state.status = AP_GPS::NO_FIX;
-        if ((temp.Mode & 128) > 0) // gps only has 2d fix
+        } else if ((temp.Mode & 128) > 0) { // gps only has 2d fix
             state.status = AP_GPS::GPS_OK_FIX_2D;
+        }
                     
         return true;
     }
-    // DOP
-    if (blockid == 4001) {
+    case DOP:
+    {
         const msg4001 &temp = sbf_msg.data.msg4001u;
 
-        last_hdop = temp.HDOP;
+        state.hdop = temp.HDOP;
+        state.vdop = temp.VDOP;
+        break;
+    }
+    case ReceiverStatus:
+    {
+        const msg4014 &temp = sbf_msg.data.msg4014u;
+        RxState = temp.RxState;
+        break;
+    }
+    case VelCovGeodetic:
+    {
+        const msg5908 &temp = sbf_msg.data.msg5908u;
 
-        state.hdop = last_hdop;
+        // select the maximum variance, as the EKF will apply it to all the columnds in it's estimate
+        // FIXME: Support returning the covariance matric to the EKF
+        float max_variance_squared = MAX(temp.Cov_VnVn, MAX(temp.Cov_VeVe, temp.Cov_VuVu));
+        if (is_positive(max_variance_squared)) {
+            state.have_speed_accuracy = true;
+            state.speed_accuracy = sqrt(max_variance_squared);
+        } else {
+            state.have_speed_accuracy = false;
+        }
+        break;
+    }
     }
 
     return false;
 }
 
-void
-AP_GPS_SBF::inject_data(const uint8_t *data, uint16_t len)
+void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
-
-    if (port->txspace() > len) {
-        last_injected_data_ms = AP_HAL::millis();
-        port->write(data, len);
-    } else {
-        Debug("SBF: Not enough TXSPACE");
+    if (gps._raw_data) {
+        if (!(RxState & SBF_DISK_MOUNTED)){
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
+        }
+        else if (RxState & SBF_DISK_FULL) {
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
+        }
+        else if (!(RxState & SBF_DISK_ACTIVITY)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
+        }
     }
 }

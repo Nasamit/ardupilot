@@ -29,10 +29,10 @@ def arm_sub(mavproxy, mav):
 
 def dive_manual(mavproxy, mav):
     mavproxy.send('rc 3 1600\n')
-    mavproxy.send('rc 6 1600\n')
-    mavproxy.send('rc 7 1550\n')
+    mavproxy.send('rc 5 1600\n')
+    mavproxy.send('rc 6 1550\n')
 
-    if not wait_distance(mav, 50, accuracy=7, timeout=100):
+    if not wait_distance(mav, 50, accuracy=7, timeout=200):
         return False
     
     mavproxy.send('rc 4 1550\n')
@@ -51,8 +51,8 @@ def dive_manual(mavproxy, mav):
         return False
     
     mavproxy.send('rc 4 1500\n')
-    mavproxy.send('rc 6 1500\n')
-    mavproxy.send('rc 7 1100\n')
+    mavproxy.send('rc 5 1500\n')
+    mavproxy.send('rc 6 1100\n')
     
     if not wait_distance(mav, 75, accuracy=7, timeout=100):
         return False
@@ -81,10 +81,8 @@ def dive_mission(mavproxy, mav, filename):
     mavproxy.send('mode auto\n')
     wait_mode(mav, 'AUTO')
     
-    if not wait_waypoint(mav, 1, 6, max_dist=5):
+    if not wait_waypoint(mav, 1, 5, max_dist=5):
         return False
-    
-    wait_altitude(mav, -1, 1, timeout=3000)
     
     mavproxy.send('disarm\n');
     
@@ -94,7 +92,7 @@ def dive_mission(mavproxy, mav, filename):
     print("Mission OK")
     return True
 
-def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
     """Dive ArduSub in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -107,7 +105,7 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
         options += ' --map'
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sitl = util.start_SITL(binary, model='vectored', wipe=True, home=home, speedup=10)
+    sitl = util.start_SITL(binary, model='vectored', wipe=True, home=home, speedup=speedup)
     mavproxy = util.start_MAVProxy_SITL('ArduSub', options=options)
     mavproxy.expect('Received [0-9]+ parameters')
 
@@ -123,7 +121,7 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
 
-    sitl = util.start_SITL(binary, model='vectored', home=home, speedup=10, valgrind=valgrind, gdb=gdb)
+    sitl = util.start_SITL(binary, model='vectored', home=home, speedup=speedup, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
     mavproxy = util.start_MAVProxy_SITL('ArduSub', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)

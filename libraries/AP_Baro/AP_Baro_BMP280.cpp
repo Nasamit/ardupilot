@@ -116,7 +116,7 @@ bool AP_Baro_BMP280::_init()
 
     #if CONFIG_HAL_BOARD != HAL_BOARD_86DUINO
     // request 50Hz update
-    _dev->register_periodic_callback(20 * USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
+    _dev->register_periodic_callback(20 * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
     #endif
 
     return true;

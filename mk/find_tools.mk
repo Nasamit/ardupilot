@@ -36,16 +36,11 @@ NATIVE_OBJCOPY :=  objcopy
 
 AVARICE      :=  $(call FIND_TOOL,avarice)
 
-# toolchains for beagleboneblack
-BBONE_CXX     :=  arm-linux-gnueabihf-g++
-BBONE_CC      :=  arm-linux-gnueabihf-gcc
-BBONE_AS      :=  arm-linux-gnueabihf-gcc
-BBONE_AR      :=  ar
-BBONE_LD      :=  arm-linux-gnueabihf-g++
-BBONE_GDB     :=  gdb
-BBONE_OBJCOPY :=  objcopy
+# enable ccache if installed
+CCACHE :=  $(call FIND_TOOL,ccache)
+export CCACHE
 
-# toolchains for Raspberry Pi
+# toolchain used for sitl-arm
 RPI_CXX     :=  arm-linux-gnueabihf-g++
 RPI_CC      :=  arm-linux-gnueabihf-gcc
 RPI_AS      :=  arm-linux-gnueabihf-gcc

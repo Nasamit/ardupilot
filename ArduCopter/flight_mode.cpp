@@ -109,6 +109,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             success = guided_nogps_init(ignore_checks);
             break;
 
+        case SMART_RTL:
+            success = smart_rtl_init(ignore_checks);
+            break;
+
         default:
             success = false;
             break;
@@ -142,7 +146,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     } else {
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
-        gcs_send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
+        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
     }
 
     // update notify object
@@ -246,6 +250,11 @@ void Copter::update_flight_mode()
             guided_nogps_run();
             break;
 
+
+        case SMART_RTL:
+            smart_rtl_run();
+            break;
+
         default:
             break;
     }
@@ -279,6 +288,11 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
     // cancel any takeoffs in progress
     takeoff_stop();
 
+    // call smart_rtl cleanup
+    if (old_control_mode == SMART_RTL) {
+        smart_rtl_exit();
+    }
+
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
     if (old_control_mode == ACRO) {
@@ -307,6 +321,7 @@ bool Copter::mode_requires_GPS(control_mode_t mode)
         case GUIDED:
         case LOITER:
         case RTL:
+        case SMART_RTL:
         case CIRCLE:
         case DRIFT:
         case POSHOLD:
@@ -354,6 +369,7 @@ void Copter::notify_flight_mode(control_mode_t mode)
         case AVOID_ADSB:
         case GUIDED_NOGPS:
         case LAND:
+        case SMART_RTL:
             // autopilot modes
             AP_Notify::flags.autopilot_mode = true;
             break;
@@ -424,70 +440,3 @@ void Copter::notify_flight_mode(control_mode_t mode)
             break;
     }
 }
-
-//
-// print_flight_mode - prints flight mode to serial port.
-//
-void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
-{
-    switch (mode) {
-    case STABILIZE:
-        port->printf("STABILIZE");
-        break;
-    case ACRO:
-        port->printf("ACRO");
-        break;
-    case ALT_HOLD:
-        port->printf("ALT_HOLD");
-        break;
-    case AUTO:
-        port->printf("AUTO");
-        break;
-    case GUIDED:
-        port->printf("GUIDED");
-        break;
-    case LOITER:
-        port->printf("LOITER");
-        break;
-    case RTL:
-        port->printf("RTL");
-        break;
-    case CIRCLE:
-        port->printf("CIRCLE");
-        break;
-    case LAND:
-        port->printf("LAND");
-        break;
-    case DRIFT:
-        port->printf("DRIFT");
-        break;
-    case SPORT:
-        port->printf("SPORT");
-        break;
-    case FLIP:
-        port->printf("FLIP");
-        break;
-    case AUTOTUNE:
-        port->printf("AUTOTUNE");
-        break;
-    case POSHOLD:
-        port->printf("POSHOLD");
-        break;
-    case BRAKE:
-        port->printf("BRAKE");
-        break;
-    case THROW:
-        port->printf("THROW");
-        break;
-    case AVOID_ADSB:
-        port->printf("AVOID_ADSB");
-        break;
-    case GUIDED_NOGPS:
-        port->printf("GUIDED_NOGPS");
-        break;
-    default:
-        port->printf("Mode(%u)", (unsigned)mode);
-        break;
-    }
-}
-
