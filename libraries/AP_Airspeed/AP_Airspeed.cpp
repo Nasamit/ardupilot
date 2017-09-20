@@ -162,7 +162,7 @@ void AP_Airspeed::init()
         break;
     }
     if (sensor && !sensor->init()) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed init failed");
+        gcs().send_text(MAV_SEVERITY_INFO, "Airspeed init failed");
         delete sensor;
         sensor = nullptr;
     }
@@ -223,9 +223,9 @@ void AP_Airspeed::update_calibration(float raw_pressure)
     if (AP_HAL::millis() - _cal.start_ms >= 1000 &&
         _cal.read_count > 15) {
         if (_cal.count == 0) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor unhealthy");
+            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed sensor unhealthy");
         } else {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor calibrated");
+            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed sensor calibrated");
             _offset.set_and_save(_cal.sum / _cal.count);
         }
         _cal.start_ms = 0;
@@ -263,7 +263,7 @@ void AP_Airspeed::read(void)
     switch ((enum pitot_tube_order)_tube_order.get()) {
     case PITOT_TUBE_ORDER_NEGATIVE:
         airspeed_pressure = -airspeed_pressure;
-        // no break
+        FALLTHROUGH;
     case PITOT_TUBE_ORDER_POSITIVE:
         if (airspeed_pressure < -32) {
             // we're reading more than about -8m/s. The user probably has

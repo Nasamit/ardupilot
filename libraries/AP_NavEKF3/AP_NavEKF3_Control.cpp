@@ -214,19 +214,15 @@ void NavEKF3_core::setAidingMode()
             PV_AidingMode = AID_RELATIVE;
         }
     } else if (PV_AidingMode == AID_RELATIVE) {
-         // Check if the optical flow sensor has timed out
-         bool flowSensorTimeout = ((imuSampleTime_ms - flowValidMeaTime_ms) > 5000);
          // Check if the fusion has timed out (flow measurements have been rejected for too long)
          bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
-         // Check if the body odometry flow sensor has timed out
-         bool bodyOdmSensorTimeout = ((imuSampleTime_ms - bodyOdmMeasTime_ms) > 5000);
          // Check if the fusion has timed out (body odometry measurements have been rejected for too long)
          bool bodyOdmFusionTimeout = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) > 5000);
          // Enable switch to absolute position mode if GPS or range beacon data is available
          // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
          if(readyToUseGPS() || readyToUseRangeBeacon()) {
              PV_AidingMode = AID_ABSOLUTE;
-         } else if ((flowSensorTimeout || flowFusionTimeout) && (bodyOdmSensorTimeout || bodyOdmFusionTimeout)) {
+         } else if (flowFusionTimeout && bodyOdmFusionTimeout) {
              PV_AidingMode = AID_NONE;
          }
      } else if (PV_AidingMode == AID_ABSOLUTE) {
@@ -302,9 +298,10 @@ void NavEKF3_core::setAidingMode()
     // check to see if we are starting or stopping aiding and set states and modes as required
     if (PV_AidingMode != PV_AidingModePrev) {
         // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
-        if (PV_AidingMode == AID_NONE) {
+        switch (PV_AidingMode) {
+        case AID_NONE:
             // We have ceased aiding
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 IMU%u stopped aiding",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u stopped aiding",(unsigned)imu_index);
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
             posTimeout = true;
             velTimeout = true;
@@ -322,9 +319,11 @@ void NavEKF3_core::setAidingMode()
             // reset relative aiding sensor fusion activity status
             flowFusionActive = false;
             bodyVelFusionActive = false;
-        } else if (PV_AidingMode == AID_RELATIVE) {
+            break;
+
+        case AID_RELATIVE:
             // We are doing relative position navigation where velocity errors are constrained, but position drift will occur
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u started relative aiding",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u started relative aiding",(unsigned)imu_index);
             if (readyToUseOptFlow()) {
                 // Reset time stamps
                 flowValidMeaTime_ms = imuSampleTime_ms;
@@ -336,19 +335,21 @@ void NavEKF3_core::setAidingMode()
             }
             posTimeout = true;
             velTimeout = true;
-        } else if (PV_AidingMode == AID_ABSOLUTE) {
+            break;
+
+        case AID_ABSOLUTE:
             if (readyToUseGPS()) {
                 // We are commencing aiding using GPS - this is the preferred method
                 posResetSource = GPS;
                 velResetSource = GPS;
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
             } else if (readyToUseRangeBeacon()) {
                 // We are commencing aiding using range beacons
                 posResetSource = RNGBCN;
                 velResetSource = DEFAULT;
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u is using range beacons",(unsigned)imu_index);
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffsetNED.z);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u is using range beacons",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffsetNED.z);
             }
 
             // clear timeout flags as a precaution to avoid triggering any additional transitions
@@ -359,6 +360,10 @@ void NavEKF3_core::setAidingMode()
             lastPosPassTime_ms = imuSampleTime_ms;
             lastVelPassTime_ms = imuSampleTime_ms;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
+            break;
+
+        default:
+            break;
         }
 
         // Always reset the position and velocity when changing mode
@@ -380,7 +385,7 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
         Vector3f angleErrVarVec = calcRotVecVariances();
         if ((angleErrVarVec.x + angleErrVarVec.y) < sq(0.05235f)) {
             tiltAlignComplete = true;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete\n",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete\n",(unsigned)imu_index);
         }
     }
 
@@ -413,9 +418,16 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
 // return true if the filter is ready to start using body frame odometry measurements
 bool NavEKF3_core::readyToUseBodyOdm(void) const
 {
-    // We need stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use these measurements
-    return (imuSampleTime_ms - bodyOdmMeasTime_ms < 200)
-            && bodyOdmDataNew.velErr < 1.0f
+
+    // Check for fresh visual odometry data that meets the accuracy required for alignment
+    bool visoDataGood = (imuSampleTime_ms - bodyOdmMeasTime_ms < 200) && (bodyOdmDataNew.velErr < 1.0f);
+
+    // Check for fresh wheel encoder data
+    bool wencDataGood = (imuSampleTime_ms - wheelOdmMeasTime_ms < 200);
+
+    // We require stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use odometry measurements
+    // becasue they are in a body frame of reference
+    return (visoDataGood || wencDataGood)
             && tiltAlignComplete
             && delAngBiasLearned;
 }
@@ -468,11 +480,15 @@ void NavEKF3_core::setOrigin()
 {
     // assume origin at current GPS location (no averaging)
     EKF_origin = _ahrs->get_gps().location();
+    // if flying, correct for height change from takeoff so that the origin is at field elevation
+    if (inFlight) {
+        EKF_origin.alt += (int32_t)(100.0f * stateStruct.position.z);
+    }
     ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u Origin set to GPS",(unsigned)imu_index);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u Origin set to GPS",(unsigned)imu_index);
 }
 
 // record a yaw reset event

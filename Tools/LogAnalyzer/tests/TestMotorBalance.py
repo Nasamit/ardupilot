@@ -25,8 +25,8 @@ class TestBalanceTwist(Test):
 
         for i in range(8):
             for prefix in "Chan", "Ch", "C":
-                if prefix+`(i+1)` in logdata.channels["RCOU"]:
-                    ch.append(map(lambda x: x[1], logdata.channels["RCOU"][prefix+`(i+1)`].listData))
+                if prefix+repr((i+1)) in logdata.channels["RCOU"]:
+                    ch.append(map(lambda x: x[1], logdata.channels["RCOU"][prefix+repr((i+1))].listData))
 
         ch = zip(*ch)
         num_channels = 0
@@ -34,6 +34,9 @@ class TestBalanceTwist(Test):
             ch[i] = filter(lambda x: (x>0 and x<3000), ch[i])
             if num_channels < len(ch[i]):
                 num_channels = len(ch[i])
+
+        if logdata.frame:
+            num_channels = logdata.num_motor_channels()
 
         if num_channels < 2:
             return

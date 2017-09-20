@@ -43,6 +43,11 @@ public:
     // Constructor
     AP_Notify();   
 
+    // get singleton instance
+    static AP_Notify *instance(void) {
+        return _instance;
+    }
+
     // Oreo LED Themes
     enum Oreo_LED_Theme {
         OreoLED_Disabled        = 0,    // Disabled the OLED driver entirely
@@ -71,6 +76,7 @@ public:
         uint32_t leak_detected      : 1;    // 1 if leak detected
         float    battery_voltage       ;    // battery voltage
         uint32_t gps_fusion         : 1;    // 0 = GPS fix rejected by EKF, not usable for flight. 1 = GPS in use by EKF, usable for flight
+        uint32_t gps_glitching      : 1;    // 1 if gps is glitching
 
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
@@ -109,6 +115,9 @@ public:
     // initialisation
     void init(bool enable_external_leds);
 
+    // add all backends
+    void add_backends(void);
+
     /// update - allow updates of leds that cannot be updated during a timed interrupt
     void update(void);
 
@@ -132,6 +141,8 @@ public:
 
 private:
 
+    static AP_Notify *_instance;
+
     // parameters
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
@@ -144,4 +155,5 @@ private:
     char _flight_mode_str[5];
 
     static NotifyDevice* _devices[];
+    static uint8_t _num_devices;
 };

@@ -40,11 +40,17 @@ public:
     void timer_tick(void) override;
     bool enable_sbus_out(uint16_t rate_hz) override;
 
+    // set default output update rate
+    void set_default_rate(uint16_t rate_hz) override;
+
 private:
     int _pwm_fd;
     int _alt_fd;
     uint16_t _freq_hz;
     uint16_t _period[PX4_NUM_OUTPUT_CHANNELS];
+    // we keep the last_sent value separately, as we need to keep the unscaled
+    // value for systems with brushed motors which scale outputs
+    uint16_t _last_sent[PX4_NUM_OUTPUT_CHANNELS];
     volatile uint8_t _max_channel;
     volatile bool _need_update;
     bool _sbus_enabled:1;
@@ -76,4 +82,5 @@ private:
     enum AP_HAL::Util::safety_state _safety_state_request = AP_HAL::Util::SAFETY_NONE;
     uint32_t _safety_state_request_last_ms = 0;
     void force_safety_pending_requests(void);
+    uint16_t _default_rate_hz = 50;
 };

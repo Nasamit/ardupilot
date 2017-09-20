@@ -117,6 +117,10 @@ public:
     // Returns 1 if command accepted
     uint8_t setInhibitGPS(void);
 
+    // Set the argument to true to prevent the EKF using the GPS vertical velocity
+    // This can be used for situations where GPS velocity errors are causing problems with height accuracy
+    void setGpsVertVelUse(const bool varIn) { inhibitGpsVertVelUse = varIn; };
+
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
@@ -211,6 +215,17 @@ public:
      * posOffset is the XYZ body frame position of the camera focal point (m)
     */
     void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
+
+    /*
+     * Write odometry data from a wheel encoder. The axis of rotation is assumed to be parallel to the vehicle body axis
+     *
+     * delAng is the measured change in angular position from the previous measurement where a positive rotation is produced by forward motion of the vehicle (rad)
+     * delTime is the time interval for the measurement of delAng (sec)
+     * timeStamp_ms is the time when the rotation was last measured (msec)
+     * posOffset is the XYZ body frame position of the wheel hub (m)
+     * radius is the effective rolling radius of the wheel (m)
+    */
+    void writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius);
 
     /*
      * Return data for debugging body frame odometry fusion:
@@ -395,6 +410,10 @@ private:
     AP_Float _accBiasLim;           // Accelerometer bias limit (m/s/s)
     AP_Int8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
     AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
+    AP_Float _visOdmVelErrMax;      // Observation 1-STD velocity error assumed for visual odometry sensor at lowest reported quality (m/s)
+    AP_Float _visOdmVelErrMin;      // Observation 1-STD velocity error assumed for visual odometry sensor at highest reported quality (m/s)
+    AP_Float _wencOdmVelErr;        // Observation 1-STD velocity error assumed for wheel odometry sensor (m/s)
+
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -458,9 +477,10 @@ private:
     } pos_down_reset_data;
 
     bool runCoreSelection; // true when the primary core has stabilised and the core selection logic can be started
-
     bool coreSetupRequired[7]; // true when this core index needs to be setup
     uint8_t coreImuIndex[7];   // IMU index used by this core
+
+    bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
 
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary

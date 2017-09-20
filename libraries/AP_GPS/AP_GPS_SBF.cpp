@@ -65,7 +65,8 @@ AP_GPS_SBF::read(void)
 
         if (now > _init_blob_time) {
             port->write((const uint8_t*)init_str, strlen(init_str));
-            _init_blob_time = now + 1000;
+            // if this is too low a race condition on start occurs and the GPS isn't detected
+            _init_blob_time = now + 2000;
         }
     }
 
@@ -129,16 +130,25 @@ AP_GPS_SBF::parse(uint8_t temp)
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
                 Debug("bad packet length=%u\n", (unsigned)sbf_msg.length);
             }
-            break;
-        case sbf_msg_parser_t::DATA:
-            if (sbf_msg.read >= sizeof(sbf_msg.data)) {
-                Debug("parse overflow length=%u\n", (unsigned)sbf_msg.read);
+            if (sbf_msg.length < 8) {
+                Debug("bad packet length=%u\n", (unsigned)sbf_msg.length);
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                crc_error_counter++; // this is a probable buffer overflow, but this
+                                     // indicates not enough bytes to do a crc
                 break;
             }
-            sbf_msg.data.bytes[sbf_msg.read] = temp;
+            break;
+        case sbf_msg_parser_t::DATA:
+            if (sbf_msg.read < sizeof(sbf_msg.data)) {
+                sbf_msg.data.bytes[sbf_msg.read] = temp;
+            }
             sbf_msg.read++;
             if (sbf_msg.read >= (sbf_msg.length - 8)) {
+                if (sbf_msg.read > sizeof(sbf_msg.data)) {
+                    // not interested in these large messages
+                    sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                    break;
+                }
                 uint16_t crc = crc16_ccitt((uint8_t*)&sbf_msg.blockid, 2, 0);
                 crc = crc16_ccitt((uint8_t*)&sbf_msg.length, 2, crc);
                 crc = crc16_ccitt((uint8_t*)&sbf_msg.data, sbf_msg.length - 8, crc);
@@ -161,7 +171,7 @@ AP_GPS_SBF::parse(uint8_t temp)
 void
 AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
 {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
         return;
     }
 
@@ -184,7 +194,7 @@ AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
         COG:temp.COG
     };
 
-    gps._DataFlash->WriteBlock(&header, sizeof(header));
+    DataFlash_Class::instance()->WriteBlock(&header, sizeof(header));
 }
 
 bool
@@ -222,7 +232,8 @@ AP_GPS_SBF::process_message(void)
             state.ground_speed = (float)safe_sqrt(ground_vector_sq);
 
             state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
-            
+            state.rtk_age_ms = temp.MeanCorrAge * 10;
+
             // value is expressed as twice the rms error = int16 * 0.01/2
             state.horizontal_accuracy = (float)temp.HAccuracy * 0.005f;
             state.vertical_accuracy = (float)temp.VAccuracy * 0.005f;
@@ -318,13 +329,13 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
     if (gps._raw_data) {
         if (!(RxState & SBF_DISK_MOUNTED)){
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
         }
         else if (RxState & SBF_DISK_FULL) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
         }
         else if (!(RxState & SBF_DISK_ACTIVITY)) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
         }
     }
 }

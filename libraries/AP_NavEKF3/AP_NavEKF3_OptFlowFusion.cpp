@@ -187,10 +187,10 @@ void NavEKF3_core::EstimateTerrainOffset()
 
             // divide velocity by range, subtract body rates and apply scale factor to
             // get predicted sensed angular optical rates relative to X and Y sensor axes
-            losPred =   relVelSensor.length()/flowRngPred;
+            losPred =   norm(relVelSensor.x, relVelSensor.y)/flowRngPred;
 
             // calculate innovations
-            auxFlowObsInnov = losPred - sqrtf(sq(ofDataDelayed.flowRadXYcomp[0]) + sq(ofDataDelayed.flowRadXYcomp[1]));
+            auxFlowObsInnov = losPred - norm(ofDataDelayed.flowRadXYcomp.x, ofDataDelayed.flowRadXYcomp.y);
 
             // calculate observation jacobian
             float t3 = sq(q0);
@@ -676,7 +676,7 @@ void NavEKF3_core::FuseOptFlow()
             // notify first time only
             if (!flowFusionActive) {
                 flowFusionActive = true;
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing optical flow",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing optical flow",(unsigned)imu_index);
             }
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the

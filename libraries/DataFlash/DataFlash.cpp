@@ -50,7 +50,7 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
 
 void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_types)
 {
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Preparing log system");
+    gcs().send_text(MAV_SEVERITY_INFO, "Preparing log system");
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     validate_structures(structures, num_types);
     dump_structures(structures, num_types);
@@ -111,7 +111,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
 
     EnableWrites(true);
 
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Prepared log system");
+    gcs().send_text(MAV_SEVERITY_INFO, "Prepared log system");
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -296,20 +296,15 @@ void DataFlash_Class::backend_starting_new_log(const DataFlash_Backend *backend)
     }
 }
 
-// start any backend which hasn't started; this is only called from
-// the vehicle code
-void DataFlash_Class::StartUnstartedLogging(void)
+bool DataFlash_Class::should_log(const uint32_t mask) const
 {
-    for (uint8_t i=0; i<_next_backend; i++) {
-        if (!backends[i]->logging_started()) {
-            backends[i]->start_new_log();
-        }
+    if (!(mask & _log_bitmask)) {
+        return false;
     }
-}
-
-bool DataFlash_Class::should_log() const
-{
     if (!vehicle_is_armed() && !log_while_disarmed()) {
+        return false;
+    }
+    if (in_log_download()) {
         return false;
     }
     if (_next_backend == 0) {
@@ -325,6 +320,11 @@ bool DataFlash_Class::should_log() const
             backends[i]->methodcall;              \
         }                                         \
     } while (0)
+
+void DataFlash_Class::PrepForArming()
+{
+    FOR_EACH_BACKEND(PrepForArming());
+}
 
 void DataFlash_Class::setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer)
 {
@@ -460,11 +460,20 @@ bool DataFlash_Class::logging_started(void) {
     return false;
 }
 
-void DataFlash_Class::handle_mavlink_msg(mavlink_channel_t chan, mavlink_message_t* msg)
+void DataFlash_Class::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
 {
     switch (msg->msgid) {
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        FOR_EACH_BACKEND(remote_log_block_status_msg(chan, msg));
+        FOR_EACH_BACKEND(remote_log_block_status_msg(link.get_chan(), msg));
+        break;
+    case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
+        /* fall through */
+    case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
+        /* fall through */
+    case MAVLINK_MSG_ID_LOG_ERASE:
+        /* fall through */
+    case MAVLINK_MSG_ID_LOG_REQUEST_END:
+        handle_log_message(link, msg);
         break;
     }
 }
@@ -519,7 +528,6 @@ uint32_t DataFlash_Class::num_dropped() const
 // end functions pass straight through to backend
 
 void DataFlash_Class::internal_error() const {
-//    _internal_errors++;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     abort();
 #endif

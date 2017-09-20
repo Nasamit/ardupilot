@@ -71,22 +71,23 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     // GPS sensing can have large delays and should not be included if disabled
     if (_frontend->_fusionModeGPS != 3) {
         // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
-        if (!_ahrs->get_gps().all_configured()) {
+        float gps_delay_sec = 0;
+        if (!_ahrs->get_gps().get_lag(gps_delay_sec)) {
             if (AP_HAL::millis() - lastInitFailReport_ms > 10000) {
                 lastInitFailReport_ms = AP_HAL::millis();
                 // provide an escalating series of messages
                 if (AP_HAL::millis() > 30000) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "EKF3 waiting for GPS config data");
+                    gcs().send_text(MAV_SEVERITY_ERROR, "EKF3 waiting for GPS config data");
                 } else if (AP_HAL::millis() > 15000) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 waiting for GPS config data");
+                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 waiting for GPS config data");
                 } else  {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 waiting for GPS config data");
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 waiting for GPS config data");
                 }
             }
             return false;
         }
         // limit the time delay value from the GPS library to a max of 250 msec which is the max value the EKF has been tested for.
-        maxTimeDelay_ms = MAX(maxTimeDelay_ms , MIN((uint16_t)(_ahrs->get_gps().get_lag() * 1000.0f),250));
+        maxTimeDelay_ms = MAX(maxTimeDelay_ms , MIN((uint16_t)(gps_delay_sec * 1000.0f),250));
     }
 
     // airspeed sensing can have large delays and should not be included if disabled
@@ -124,6 +125,9 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedBodyOdm.init(obs_buffer_length)) {
         return false;
     }
+    if(!storedWheelOdm.init(imu_buffer_length)) { // initialise to same length of IMU to allow for multiple wheel sensors
+        return false;
+    }
     // Note: the use of dual range finders potentially doubles the amount of data to be stored
     if(!storedRange.init(MIN(2*obs_buffer_length , imu_buffer_length))) {
         return false;
@@ -138,7 +142,7 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u buffers, IMU=%u , OBS=%u , dt=%6.4f",(unsigned)imu_index,(unsigned)imu_buffer_length,(unsigned)obs_buffer_length,(double)dtEkfAvg);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u buffers, IMU=%u , OBS=%u , dt=%6.4f",(unsigned)imu_index,(unsigned)imu_buffer_length,(unsigned)obs_buffer_length,(double)dtEkfAvg);
     return true;
 }
     
@@ -352,10 +356,10 @@ void NavEKF3_core::InitialiseVariables()
     minBcnPosD = 0.0f;
     bcnPosDownOffsetMax = 0.0f;
     bcnPosOffsetMaxVar = 0.0f;
-    OffsetMaxInnovFilt = 0.0f;
+    maxOffsetStateChangeFilt = 0.0f;
     bcnPosDownOffsetMin = 0.0f;
     bcnPosOffsetMinVar = 0.0f;
-    OffsetMinInnovFilt = 0.0f;
+    minOffsetStateChangeFilt = 0.0f;
     rngBcnFuseDataReportIndex = 0;
     memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
     bcnPosOffsetNED.zero();
@@ -364,7 +368,6 @@ void NavEKF3_core::InitialiseVariables()
     // body frame displacement fusion
     memset(&bodyOdmDataNew, 0, sizeof(bodyOdmDataNew));
     memset(&bodyOdmDataDelayed, 0, sizeof(bodyOdmDataDelayed));
-    bodyOdmStoreIndex = 0;
     lastbodyVelPassTime_ms = 0;
     memset(&bodyVelTestRatio, 0, sizeof(bodyVelTestRatio));
     memset(&varInnovBodyVel, 0, sizeof(varInnovBodyVel));
@@ -373,6 +376,8 @@ void NavEKF3_core::InitialiseVariables()
     bodyOdmMeasTime_ms = 0;
     bodyVelFusionDelayed = false;
     bodyVelFusionActive = false;
+    usingWheelSensors = false;
+    wheelOdmMeasTime_ms = 0;
 
     // zero data buffers
     storedIMU.reset();
@@ -384,6 +389,7 @@ void NavEKF3_core::InitialiseVariables()
     storedOutput.reset();
     storedRangeBeacon.reset();
     storedBodyOdm.reset();
+    storedWheelOdm.reset();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -461,7 +467,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
 
     // set to true now that states have be initialised
     statesInitialised = true;
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
 
     return true;
 }
