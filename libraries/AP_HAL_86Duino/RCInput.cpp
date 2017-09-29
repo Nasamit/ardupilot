@@ -19,7 +19,7 @@ using namespace x86Duino;
 
 static unsigned long (*(readCapStat[3]))(int, int) = {mcpfau_ReadCAPSTAT1, mcpfau_ReadCAPSTAT2, mcpfau_ReadCAPSTAT3};
 static unsigned long (*(readCapFIFO[3]))(int, int, unsigned long*) = {mcpfau_ReadCAPFIFO1, mcpfau_ReadCAPFIFO2, mcpfau_ReadCAPFIFO3};
-static volatile unsigned long CH[6] = {0};
+static volatile unsigned long CH[RCINPUT_MAX_CH] = {0};
 static volatile int CH_flag = 0x00;
 static volatile bool CH_updated = false;
 static char* name = "rcinput_Int";
@@ -107,6 +107,10 @@ RCInput::RCInput()
     CH[1] = 150000;
     CH[2] =  90000;
     CH[3] = 150000;
+    CH[4] = 100000;
+    CH[5] = 100000;
+    CH[6] = 190000; // CH_7 default enable
+    CH[7] = 100000;
 
     memset(&_override[0],0,sizeof(_override));
     _override_valid = false;

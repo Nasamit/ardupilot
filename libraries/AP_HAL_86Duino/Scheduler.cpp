@@ -135,7 +135,7 @@ void Scheduler::init()
     // set default file open mode
     _fmode = O_BINARY;    
     // setup Time Zone
-    setenv("TZ", "", 1);   // set TZ system variable (set to GMT+0)
+    setenv("TZ", "GMT+8", 1);   // set TZ system variable (set to GMT+0)
     tzset();    // setup time zone
 
     mcpwm_Disable(MC_1k, MD_1k);

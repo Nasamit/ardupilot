@@ -228,6 +228,8 @@ AP_RangeFinder_VL53L0X::AP_RangeFinder_VL53L0X(RangeFinder::RangeFinder_State &_
 */
 AP_RangeFinder_Backend *AP_RangeFinder_VL53L0X::detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
+    if( !dev ) return nullptr;
+        
     AP_RangeFinder_VL53L0X *sensor
         = new AP_RangeFinder_VL53L0X(_state, std::move(dev));
 
@@ -763,6 +765,18 @@ uint16_t AP_RangeFinder_VL53L0X::read_register16(uint8_t reg)
 */
 void AP_RangeFinder_VL53L0X::update(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_86DUINO
+    uint16_t range_mm;
+    if (get_reading(range_mm) && range_mm < 8000)
+    {
+        state.distance_cm  = range_mm/10;
+        update_status();    
+    }
+    else
+    {
+        set_status(RangeFinder::RangeFinder_NoData);
+    }    
+#else
     if (counter > 0) {
         state.distance_cm = sum_mm / (10*counter);
         sum_mm = 0;
@@ -771,6 +785,7 @@ void AP_RangeFinder_VL53L0X::update(void)
     } else {
         set_status(RangeFinder::RangeFinder_NoData);
     }
+#endif    
 }
 
 void AP_RangeFinder_VL53L0X::timer(void)

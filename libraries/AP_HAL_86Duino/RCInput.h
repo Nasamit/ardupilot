@@ -2,7 +2,7 @@
 
 #include "AP_HAL_86Duino.h"
 
-#define RCINPUT_MAX_CH  6
+#define RCINPUT_MAX_CH 8    // CH_7 & CH_8 are software simulate
 
 class x86Duino::RCInput : public AP_HAL::RCInput {
 public:

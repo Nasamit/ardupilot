@@ -155,8 +155,7 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 
     // test zone
     x86GPIO.pinMode(13, HAL_GPIO_OUTPUT);
-    if( x86Util.get_system_clock_ms()/1000 < x86Util.compile_time(__DATE__ , __TIME__) )
-        x86Util.set_system_clock(x86Util.compile_time(__DATE__ , __TIME__)*1000000ULL);
+//    x86Util.set_system_clock(1506577910909*1000ULL);
 
 
     callbacks->setup();
@@ -212,7 +211,8 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
 //        if( AP_HAL::millis() - last_print > 1000 )
 //        {
 //            last_print = AP_HAL::millis();
-//            Serial1.printf("ms: %d , wdt_count: %d \n", last_print, wdt_count );
+////            Serial1.printf("ms: %d , wdt_count: %d \n", last_print, wdt_count );
+//            usbUart.printf("sys:%llu, compile:%lu\n",x86Util.get_system_clock_ms()/1000, x86Util.compile_time(__DATE__ , __TIME__) );
 //        }
 //        // storage test & hal test
 //        static auto _perf_write = x86Util.perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write");
