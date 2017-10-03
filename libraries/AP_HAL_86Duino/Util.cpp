@@ -5,7 +5,7 @@
 
 extern const AP_HAL::HAL& hal ;
 
-using namespace x86Duino;
+namespace x86Duino {
 
 #ifndef PRIu64
 #define PRIu64 "llu"
@@ -25,7 +25,6 @@ enum Util::safety_state Util::safety_switch_state()
 
 void Util::set_system_clock(uint64_t time_utc_usec)
 {
-//    hal.uartB->printf("set time_t : %llu\n", time_utc_usec);
     struct timeval tp;
     tp.tv_sec = time_utc_usec/1000000 ;
     tp.tv_usec = time_utc_usec%1000000 ;
@@ -42,10 +41,7 @@ time_t Util::compile_time(char const *date, char const *time) {
     sscanf(date, "%s %d %d", s_month, &day, &year);
     sscanf(time, "%d:%d:%d", &Hour, &Minute, &Second);
     month = (strstr(month_names, s_month)-month_names)/3;
-
-//    hal.uartB->printf(" HMS : %d %d %d \n", Hour, Minute, Second);
-//    hal.uartB->printf(" YMD : %d %d %d \n", year, month, day);
-
+    
     t.tm_sec  = Second;
     t.tm_min  = Minute;
     t.tm_hour  = Hour;
@@ -53,8 +49,6 @@ time_t Util::compile_time(char const *date, char const *time) {
     t.tm_mday = day;
     t.tm_year = year - 1900;
     t.tm_isdst = -1;
-
-//    hal.uartB->printf("compile time_t : %d\n",mktime(&t) );
 
     return mktime(&t);
 }
@@ -190,11 +184,9 @@ void Util::_debug_counters()
     for (auto &c : v) {
         if (!c.count) {
             hal.console->printf(
-//            fprintf(stderr,
                     "%-30s\t" "(no events)\n", c.name);
         } else if (c.type == Util::PC_ELAPSED) {
             hal.console->printf(
-//            fprintf(stderr,
                     "%-30s\t"
                     "count: %" PRIu64 "\t"
                     "min: %" PRIu64 "\t"
@@ -204,7 +196,6 @@ void Util::_debug_counters()
                     c.name, c.count, c.min, c.max, c.avg, sqrt(c.m2));
         } else {
             hal.console->printf(
-//            fprintf(stderr,
                     "%-30s\t" "count: %" PRIu64 "\n",
                     c.name, c.count);
         }
@@ -213,3 +204,5 @@ void Util::_debug_counters()
     _last_debug_msec = now;
 }
 AP_HAL::Semaphore *Util::new_semaphore() { return new Semaphore; }
+
+}

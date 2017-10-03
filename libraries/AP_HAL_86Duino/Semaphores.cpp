@@ -1,7 +1,7 @@
 
 #include "Semaphores.h"
 
-using namespace x86Duino;
+namespace x86Duino {
 
 bool Semaphore::give() {
     if (_taken) {
@@ -24,4 +24,6 @@ bool Semaphore::take_nonblocking() {
     } else {
         return false;
     }
+}
+
 }

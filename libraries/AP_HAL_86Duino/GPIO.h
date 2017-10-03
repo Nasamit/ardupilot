@@ -2,7 +2,9 @@
 
 #include "AP_HAL_86Duino.h"
 
-class x86Duino::GPIO : public AP_HAL::GPIO {
+namespace x86Duino {
+
+class GPIO : public AP_HAL::GPIO {
 public:
     GPIO();
     void    init();
@@ -24,7 +26,7 @@ public:
     void    setPinStatus();
 };
 
-class x86Duino::DigitalSource : public AP_HAL::DigitalSource {
+class DigitalSource : public AP_HAL::DigitalSource {
 public:
     DigitalSource(uint8_t v);
     void    mode(uint8_t output);
@@ -34,3 +36,5 @@ public:
 private:
     uint8_t _v;
 };
+
+}

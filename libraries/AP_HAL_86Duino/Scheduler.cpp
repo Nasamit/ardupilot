@@ -11,15 +11,13 @@
 #include "mcm.h"
 #include "irq.h"
 
-using namespace x86Duino;
-
 extern const AP_HAL::HAL& hal;
+
+namespace x86Duino {
 extern volatile bool in_loop ;
 
 #define MC_1k 3     // 1k hz timer
 #define MD_1k 2
-
-#define WDTIRQ    (7)
 
 static int mcint_offset[3] = {0, 8, 16};
 int wdt_count = 0, timer_1k_count = 0 ;
@@ -33,86 +31,7 @@ static int timer1k_isr_handler(int irq, void* data)
     mc_outp(MC_1k, 0x04, (PULSE_END_INT << mcint_offset[MD_1k]));   // clear flag
     timer_1k_count++;
     
-//    static uint32_t count = 0 ;
-//    count++;
-//    if( count%500 == 0 )
-//    hal.gpio->toggle(13);
-    
     ((Scheduler*)hal.scheduler)->_run_timer_procs();
-
-    return ISR_HANDLED;
-}
-
-// WDT timer
-static struct wdt_status {
-    unsigned char ctrl_reg;   // 0xA8
-    unsigned char sigsel_reg; // 0xA9
-    unsigned char count0_reg; // 0xAA
-    unsigned char count1_reg; // 0xAB
-    unsigned char count2_reg; // 0xAC
-    unsigned char stat_reg;   // 0xAD
-
-    unsigned char reload_reg; // 0xAE
-} WDT_t;
-char * isrname_wdt = (char*) "TimerWDT";
-
-void wdt_settimer(unsigned long usec) {
-    unsigned long ival;
-    double dval;
-    dval = ((double)usec) / 30.5;
-    ival = (unsigned long)dval;
-
-    if(ival > 0x00ffffffL) ival = 0x00ffffffL;
-
-    io_outpb(0xac, (ival >> 16) & 0x00ff);
-    io_outpb(0xab, (ival >> 8) & 0x00ff);
-    io_outpb(0xaa, ival & 0x00ff);
-}
-
-void _wdt_enable(void) {
-    unsigned char val;
-    val = io_inpb(0xa8);
-    io_outpb(0xa8, val | 0x40);  // reset bit 6 to disable WDT1
-}
-
-void _wdt_disable(void) {
-    unsigned char val;
-    val = io_inpb(0xa8);
-    io_outpb(0xa8, val & (~0x40));  // reset bit 6 to disable WDT1
-}
-
-static int timerwdt_isr_handler(int irq, void* data) {    
-    if((io_inpb(0xad) & 0x80) == 0) return ISR_NONE;
-    wdt_count++ ;
-
-    io_outpb(0xad, 0x80); // clear timeout event bit
-    _wdt_disable();
-    _wdt_enable();
-//    static uint32_t count = 0 ;
-//    count++;
-//    if( count%500 == 0 )
-//        hal.gpio->toggle(13);
-
-
-    if( ((Scheduler*)hal.scheduler)->initialized == false )
-    {
-//        ((Scheduler*)hal.scheduler)->run_spi_thread();
-//        ((Scheduler*)hal.scheduler)->run_i2c_thread();
-//        ((Scheduler*)hal.scheduler)->run_io();
-    }
-
-//    // check main loop status
-//    static uint64_t last_loop_out= AP_HAL::micros64() ;
-//    if( in_loop )
-//    {
-//        if( AP_HAL::micros64() - last_loop_out > 2500 )
-//        {
-//            // possiable stock at wait_for_sample()
-//            // run spi thread to get gyro & accel
-//            ((Scheduler*)hal.scheduler)->run_spi_thread();
-//        }
-//    }
-//    else    last_loop_out = AP_HAL::micros64();
 
     return ISR_HANDLED;
 }
@@ -156,37 +75,6 @@ void Scheduler::init()
     mcpwm_SetWidth(MC_1k, MD_1k, 1000*SYSCLK, 0L);    // 1k hz timer loop
     mcpwm_Enable(MC_1k, MD_1k);
     _timer_1k_enable = true;
-
-    _wdt_disable();
-    // initailize WDT timer for SPI and I2C thread
-    // restore current WDT1 register
-    WDT_t.ctrl_reg   = io_inpb(0xA8);
-    WDT_t.sigsel_reg = io_inpb(0xA9);
-    WDT_t.count0_reg = io_inpb(0xAA);
-    WDT_t.count1_reg = io_inpb(0xAB);
-    WDT_t.count2_reg = io_inpb(0xAC);
-    WDT_t.stat_reg   = io_inpb(0xAD);
-    WDT_t.reload_reg = io_inpb(0xAE);
-
-    io_outpb(0xad, 0x80); // clear timeout event bit
-
-    // set reset signal mode to INTERRUPT
-    io_outpb(0xa9, 0x05 << 4); // use IRQ7
-
-    // set time period
-    wdt_settimer(2000); // 500hz
-
-    // setup WDT interupt
-    if(irq_Setting(WDTIRQ, IRQ_LEVEL_TRIGGER | IRQ_USE_FPU) == false)
-    {
-        printf("WDT IRQ Setting fail\n"); return;
-    }
-    if(irq_InstallISR(WDTIRQ, timerwdt_isr_handler, isrname_wdt) == false)
-    {
-        printf("irq_install fail\n"); return;
-    }
-    _wdt_enable();
-    _wdt_1k_enable = true;
 }
 
 void Scheduler::delay(uint16_t ms)
@@ -220,7 +108,6 @@ void Scheduler::register_delay_callback(AP_HAL::Proc proc,
 {
     _delay_cb = proc;
     _min_delay_cb_ms = min_time_ms;
-//    hal.console->printf("registed _delay_cb %p, ms %d\n",proc ,min_time_ms);
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -234,7 +121,6 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
     if (_num_timer_procs < X86_SCHEDULER_MAX_TIMER_PROCS) {
         _timer_proc[_num_timer_procs] = proc;
         _num_timer_procs++;
-//        hal.console->printf("Timer processes %d\n",_num_timer_procs);
     } else {
         hal.console->printf("Out of timer processes\n");
     }
@@ -251,7 +137,6 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc)
     if (_num_io_procs < X86_SCHEDULER_MAX_TIMER_PROCS) {
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
-//        hal.console->printf("IO processes %d\n",_num_io_procs);
     } else {
         hal.console->printf("Out of IO processes\n");
     }
@@ -271,7 +156,6 @@ AP_HAL::Device::PeriodicHandle Scheduler::register_i2c_process(uint32_t period_u
         _i2c_proc[_num_i2c_procs].period_usec = period_usec;
         _i2c_proc[_num_i2c_procs].next_usec = AP_HAL::micros64()+period_usec;
         _num_i2c_procs++;
-//        hal.console->printf("I2C processes %d\n",_num_i2c_procs);
         return (&_i2c_proc[_num_i2c_procs]);
     } else {
         hal.console->printf("Out of I2C processes\n");
@@ -293,7 +177,6 @@ AP_HAL::Device::PeriodicHandle Scheduler::register_spi_process(uint32_t period_u
         _spi_proc[_num_spi_procs].period_usec = period_usec;
         _spi_proc[_num_spi_procs].next_usec = AP_HAL::micros64()+period_usec;
         _num_spi_procs++;
-//        hal.console->printf("SPI processes %d\n",_num_spi_procs);
         return (&_spi_proc[_num_spi_procs]);
     } else {
         hal.console->printf("Out of SPI processes\n");
@@ -420,4 +303,6 @@ void Scheduler::_run_timer_procs()
 
     // AD timer thread
     ((AnalogIn*)hal.analogin)->update();
+}
+
 }

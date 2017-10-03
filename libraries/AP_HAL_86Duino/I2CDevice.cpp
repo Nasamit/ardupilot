@@ -19,10 +19,11 @@
 #include "io.h"
 #include "i2c.h"
 
-using namespace x86Duino ;
+extern const AP_HAL::HAL& hal ;
+
+namespace x86Duino {
 
 Semaphore I2CDevice::i2c_semaphore;
-extern const AP_HAL::HAL& hal ;
 
 I2CDevice::I2CDevice(uint8_t address) :
     _address(address)
@@ -45,7 +46,6 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         i2cmaster_StartN(0, _address, I2C_WRITE, send_len);
         for( uint32_t i = 0 ; i < send_len ; i++ )
             i2cmaster_WriteN( 0, send[i]);
-//        hal.console->print("send done\n");
     }
 
     if( recv_len )
@@ -53,7 +53,6 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         i2cmaster_StartN(0, _address, I2C_READ, recv_len);
         for( uint32_t i = 0 ; i < recv_len ; i++ )
             recv[i] = i2cmaster_ReadN(0) ;
-//        hal.console->print("rvec done\n");
     }
     return true;
 }
@@ -85,6 +84,6 @@ void I2CDeviceManager::init(void)
     i2c_Init2(0xFB00, I2C_USEMODULE0, I2CIRQ_DISABLE, I2CIRQ_DISABLE);
     i2c_SetSpeed(0, I2CMODE_AUTO, 400000L);
     _is_initailized = true;
-//    hal.console->print("I2C bus inited!\n");
 }
 
+}

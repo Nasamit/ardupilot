@@ -33,7 +33,7 @@
 #if defined(__APPLE__) && defined(__MACH__)
 #include <sys/param.h>
 #include <sys/mount.h>
-#elif defined( __86DUINO__ )
+#elif CONFIG_HAL_BOARD == HAL_BOARD_86DUINO
 #include <sys/vfs.h>
 #elif !DATAFLASH_FILE_MINIMAL
 #include <sys/statfs.h>

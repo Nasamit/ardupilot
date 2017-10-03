@@ -47,7 +47,6 @@ extern int wdt_count, timer_1k_count, spi_count, spi_mpu9250_count ,rc_in_count,
 volatile bool in_loop = false ;
 
 void _86Duino_error_process(int num) {
-	int ledpin = 13;
 	// disable all irq except usb irq (5)
 	i8259_DisableIRQ(0);
 	i8259_DisableIRQ(1);
@@ -67,11 +66,8 @@ void _86Duino_error_process(int num) {
 	printf("\nOop, this program is crash :(\n");
 	printf("You may write a bug in your sketch, check and upload it again.\n");
 
-//	// led blink pattern
-//	pinMode(ledpin, OUTPUT);
 	while(1)
 	{
-//		error_led_blink(ledpin);
 	}
 }
 
@@ -161,88 +157,10 @@ void HAL_86Duino::run(int argc, char * const argv[], Callbacks* callbacks) const
     callbacks->setup();
     scheduler->system_initialized();
 
-    for (;;) {
-
-//        x86Scheduler.run_spi_thread();
-//        x86Scheduler.run_i2c_thread();    
+    for (;;) 
+    { 
         x86Scheduler.run_io();
-
         callbacks->loop();  // use polling - self control frequency
-//        static uint64_t next_loop_us = AP_HAL::micros64() + 2500;
-//        if( next_loop_us < AP_HAL::micros64() )
-//        {
-//            next_loop_us = AP_HAL::micros64() + 2500;   // call loop at 400 hz (2500us)
-//            in_loop = true ;
-//            callbacks->loop();
-//            in_loop = false ;
-//        }
-
-//        static uint32_t alive_count = AP_HAL::millis();
-//        if( AP_HAL::millis() > alive_count + 1000 )
-//        {
-//            alive_count = AP_HAL::millis();
-////            usbUart.printf("alive: %d, 1k: %d, wdt: %d, spi: %d, mpu: %d\n", alive_count, timer_1k_count, wdt_count, spi_count, spi_mpu9250_count);
-//            usbUart.printf("alive: %d, 1k: %d, wdt: %d, rc_in: %d, uart: %d, spi: %d, mpu: %d\n"
-//                           , alive_count, timer_1k_count, wdt_count, rc_in_count, uart_count, spi_count, spi_mpu9250_count );
-//        }
-//        usbUart.printf("main..\n");
-//        x86Scheduler.delay(100);
-//        usbUart.printf("A: %d, B: %d, C: %d\n", Serial1.txspace(), Serial2.txspace(), Serial3.txspace());
-
-//        Serial1.printf("ms: %llu\n", x86Util.get_system_clock_ms() );
-
-//        static uint32_t count = 1000;
-//        static int8_t sign = 1;
-//        count+= 20*sign;
-//        x86RCOutput.write(CH_1, count);
-//        if(count > 2000) sign = -1;
-//        if(count < 1000) sign = 1;
-
-//        if( x86RCInput.new_input() )
-//        {
-//            uint16_t RC_in[6];
-//            x86RCInput.read( RC_in, 6);
-//            Serial1.printf("ms:%d CH %d %d %d %d ,%d %d\n",AP_HAL::millis(),RC_in[0] ,RC_in[1] ,RC_in[2] ,RC_in[3] ,RC_in[4] ,RC_in[5]);
-////            Serial1.printf("ms:%d \n",AP_HAL::millis());
-//            x86RCOutput.write(CH_2, RC_in[2]);
-//        }
-
-//        static int last_print = AP_HAL::millis() ;
-//        if( AP_HAL::millis() - last_print > 1000 )
-//        {
-//            last_print = AP_HAL::millis();
-////            Serial1.printf("ms: %d , wdt_count: %d \n", last_print, wdt_count );
-//            usbUart.printf("sys:%llu, compile:%lu\n",x86Util.get_system_clock_ms()/1000, x86Util.compile_time(__DATE__ , __TIME__) );
-//        }
-//        // storage test & hal test
-//        static auto _perf_write = x86Util.perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write");
-//        static uint32_t idx_w = 0 ;
-//        if( idx_w < 16 )
-//        {
-//            idx_w ++ ;
-//            uint8_t buf[1024] ;
-//            memset( buf, idx_w, sizeof(buf)) ;
-//            x86Util.perf_begin(_perf_write);
-//            x86Storage.write_block(idx_w*1024, buf, sizeof(buf));
-//            x86Util.perf_end(_perf_write);
-//        }
-
-//        x86Util._debug_counters();
-
-////        if(AP_HAL::millis()/1000 > 15 ) x86Scheduler.reboot(1);
-
-////        Serial1.printf("ms:%d, usb:%s\n", AP_HAL::millis(), x86GPIO.usb_connected()? "connected" : "not connect");    // @nasamit
-////        Serial1.printf("ms:%d, ch:%d, value:%d\n", AP_HAL::millis(), x86AnalogIn.channel(1)->read_latest(),
-////                       x86AnalogIn.channel(0)->read_latest());    // @nasamit
-////        x86GPIO.toggle(13);
-////        x86AnalogIn.update();
-
-//        static auto _perf_write = x86Util.perf_alloc(AP_HAL::Util::PC_ELAPSED, "loop_time");
-//        x86Util.perf_begin(_perf_write);
-//        callbacks->loop();
-//        x86Util.perf_end(_perf_write);
-//        x86Util._debug_counters();
-
     }
 }
 

@@ -1,9 +1,9 @@
-#include <stdio.h>
+#include <cstdio>
 
 #include "USBSerial.h"
 #include "USBCore.h"
 
-using namespace x86Duino;
+namespace x86Duino {
 
 USBSerial::USBSerial()
 {
@@ -23,14 +23,14 @@ void USBSerial::begin(uint32_t b)
     USBDEV = CreateUSBDevice();
     if(USBDEV == NULL)
     {
-        printf("USB(CDC) create error\n");
+        std::printf("USB(CDC) create error\n");
     }
 
     usb_SetUSBPins(USBDEV, 7, 0, 7, 1);
     usb_SetTimeOut(USBDEV, 0L, 500L); // USB RX timerout is 0ms and TX timeout is 500ms
     if(usb_Init(USBDEV) == false)
     {
-        printf("USB(CDC) init error\n");
+        std::printf("USB(CDC) init error\n");
         USBDEV = NULL;
     }
 }
@@ -145,4 +145,6 @@ USBSerial::operator bool() {
 		result = true;
 //	timer_Delay(10);    // temp commit @nasamit
 	return result;
+}
+
 }

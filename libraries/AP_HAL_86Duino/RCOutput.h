@@ -2,6 +2,7 @@
 
 #include "AP_HAL_86Duino.h"
 
+namespace x86Duino {
 #define PWM_MAX_CH  4
 typedef struct
 {
@@ -12,7 +13,7 @@ typedef struct
     uint32_t    period;
 } CH_Info;
 
-class x86Duino::RCOutput : public AP_HAL::RCOutput {
+class RCOutput : public AP_HAL::RCOutput {
 public:
     RCOutput();
     void     init();
@@ -35,3 +36,5 @@ private:
     bool     _cork_on, _safty_on;
     void     PWM_output(uint8_t ch);
 };
+
+}

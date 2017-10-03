@@ -55,7 +55,7 @@ struct SPIDesc {
         , highspeed(highspeed_)
     {
     }
-
+    
     const char *name;
     uint16_t bus;
     uint16_t subdev;
@@ -83,8 +83,8 @@ public:
     void set_Mode(uint8_t mode);
     uint32_t Speed() { return _speed ;}
     uint8_t Mode() { return _mode ;}
-
-
+    
+    
 private:
     uint32_t _initialized;
     uint8_t _mode;
@@ -103,36 +103,28 @@ bool SPIBus::isInit()
 
 void SPIBus::init()
 {
-    //hal.uartB->printf("SPI Bus init \n");
     void *pciDev = NULL;
-
+    
     // Get SPI device base address
     pciDev = pci_Alloc(0x00, 0x10, 0x01); // PCI SPI configuration space
     if(pciDev == NULL) {printf("SPI device don't exist\n"); return;}
     SPI_IOaddr = (unsigned)(pci_In16(pciDev, 0x10) & 0xFFFFFFF0L); // get SPI base address
-#if defined DEBUG_MODE
-    printf("SPI base address = %04X\n", SPI_IOaddr);
-#endif
     pci_Free(pciDev);
-
+    
     _mode = SPI_MODE3 ;
     _speed = 4*MHZ ;
     WriteCTRR(FULLDUPEX + _mode + RESET);
-
+    
     io_outpb(SPI_IOaddr + 7, FULLDUPEX); // full-dupex
     set_Mode(_mode);
     io_outpb(SPI_IOaddr + 0x0b, 0x08); // delay clk between two transfers
     //SOURCE clock/(2 * SPI_CLOCK_DIV)
     set_Speed(_speed);
     useFIFO();
-
+    
     io_outpb(SPI_IOaddr + 4, 0x01); // set CS = high
-
+    
     _initialized = true;
-
-//    // Set SS to high so a connected chip will be "deselected" by default
-//    pinMode(SS, OUTPUT);
-//    digitalWrite(SS, HIGH);
 }
 
 void SPIBus::set_Speed(uint32_t speed) {
@@ -140,19 +132,17 @@ void SPIBus::set_Speed(uint32_t speed) {
     uint32_t clockSetting = PCI_CLOCK / 2;
     uint32_t clockDiv = 1;
     while (clockDiv < 128 && speed < clockSetting) {
-      clockSetting /= 2;
-      clockDiv *= 2;
+        clockSetting /= 2;
+        clockDiv *= 2;
     }
     setClockDivider(clockDiv); // 50M~0.39Mhz
     _speed = speed;
-//    hal.console->printf("speed set %d!\n",_speed);
 }
 
 void SPIBus::set_Mode(uint8_t mode)
 {
     io_outpb(SPI_IOaddr + 7, (io_inpb(SPI_IOaddr + 7) & 0xF1 )| mode); // set mode
     _mode = mode;
-//    hal.console->printf("mode set!\n");
 }
 
 void SPIBus::WriteCLKDIVR(uint8_t data) {
@@ -177,7 +167,7 @@ void SPIBus::setClockDivider(uint16_t rate)
     if(SPI_IOaddr == 0) return;
     if(rate > 15)
         io_outpb(SPI_IOaddr + 6, (rate&0x0ff0)>>4);
-
+    
     io_outpb(SPI_IOaddr + 2, (io_inpb(SPI_IOaddr + 2) & 0xF0) | (rate%16));
 }
 
@@ -193,15 +183,15 @@ SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
     set_device_bus(0);
     set_device_address(_desc.subdev);
     _speed = _desc.highspeed;
-
+    
     if (_desc.cs_pin != SPI_CS_KERNEL) {
         _cs = hal.gpio->channel(_desc.cs_pin);
         if (!_cs) {
             AP_HAL::panic("Unable to instantiate cs pin");
         }
-
+        
         _cs->mode(HAL_GPIO_OUTPUT);
-
+        
         // do not hold the SPI bus initially
         _cs_release();
     }
@@ -223,12 +213,11 @@ bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
 bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len)
 {
     if(SPI_IOaddr == 0) return 0;  
-
+    
     // check bus setting
     if( _bus.Speed() != _speed) _bus.set_Speed(_speed);
     if( _bus.Mode() != _desc.mode ) _bus.set_Mode(_desc.mode);
-
-    //hal.uartB->printf("transfer start!\n");
+    
     _cs_assert();
     if( send_len )
     {
@@ -240,7 +229,7 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len, uint8_t *recv, 
             io_inpb(SPI_IOaddr + 1);
         }
     }
-
+    
     if( recv_len )
     {
         for( uint32_t i = 0 ; i < recv_len ; i++ )
@@ -252,8 +241,7 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len, uint8_t *recv, 
         }
     }
     _cs_release();
-    //hal.uartB->printf("transfer end!\n");
-
+    
     return true;
 }
 
@@ -263,7 +251,7 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t
     // check bus setting
     if( _bus.Speed() != _speed) _bus.set_Speed(_speed);
     if( _bus.Mode() != _desc.mode ) _bus.set_Mode(_desc.mode);
-
+    
     _cs_assert();
     if( len )
     {
@@ -276,7 +264,7 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t
         }
     }
     _cs_release();
-
+    
     return true;
 }
 
@@ -295,7 +283,7 @@ void SPIDevice::_cs_assert()
     if (_desc.cs_pin == SPI_CS_KERNEL) {
         return;
     }
-
+    
     _cs->write(0);
 }
 
@@ -304,7 +292,7 @@ void SPIDevice::_cs_release()
     if (_desc.cs_pin == SPI_CS_KERNEL) {
         return;
     }
-
+    
     _cs->write(1);
 }
 
@@ -317,9 +305,9 @@ SPIDeviceManager::SPIDeviceManager()
 AP_HAL::OwnPtr<AP_HAL::SPIDevice> SPIDeviceManager::get_device(const char *name)
 {
     SPIDesc *desc = nullptr;
-
+    
     if( !_bus->isInit() ) _bus->init();
-
+    
     /* Find the bus description in the table */
     for (uint8_t i = 0; i < _n_device_desc; i++) {
         if (!strcmp(_device[i].name, name)) {
@@ -327,20 +315,17 @@ AP_HAL::OwnPtr<AP_HAL::SPIDevice> SPIDeviceManager::get_device(const char *name)
             break;
         }
     }
-
+    
     if (!desc) {
         printf("SPI: Invalid device name: %s\n", name);
         return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
     }
-
-    //hal.uartB->printf("find description %s, cs pind %d \n", desc->name, desc->cs_pin);
-
+    
     auto dev = AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(*_bus, *desc));
     if (!dev) {
         return nullptr;
-        //hal.uartB->printf("device creat fail\n");
     }
-
+    
     return dev;
 }
 

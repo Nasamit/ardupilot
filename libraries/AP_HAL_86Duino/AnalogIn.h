@@ -3,8 +3,9 @@
 #include "AP_HAL_86Duino.h"
 
 #define ANALOG_MAX_CHANNELS 7
+namespace x86Duino {
 
-class x86Duino::AnalogSource : public AP_HAL::AnalogSource {
+class AnalogSource : public AP_HAL::AnalogSource {
 public:
     friend class x86Duino::AnalogIn;
     AnalogSource(uint8_t p) ;
@@ -53,7 +54,7 @@ private:
     void _add_value(float v);
 };
 
-class x86Duino::AnalogIn : public AP_HAL::AnalogIn {
+class AnalogIn : public AP_HAL::AnalogIn {
 public:
     AnalogIn();
     void init() ;
@@ -72,3 +73,5 @@ private:
     x86Duino::AnalogSource* _channel[ANALOG_MAX_CHANNELS] ;
     uint32_t    AD_State;
 };
+
+}

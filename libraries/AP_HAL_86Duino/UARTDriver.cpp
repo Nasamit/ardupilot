@@ -1,7 +1,7 @@
 
 #include "UARTDriver.h"
 
-using namespace x86Duino;
+namespace x86Duino {
 
 #if defined (__86DUINO_AI)
 
@@ -214,4 +214,6 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         n += write(*buffer++);
     }
     return n;
+}
+
 }

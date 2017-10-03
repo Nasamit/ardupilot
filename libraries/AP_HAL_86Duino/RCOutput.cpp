@@ -1,14 +1,12 @@
-
 #include "RCOutput.h"
-
-using namespace x86Duino;
-
 #include "io.h"
 #include "mcm.h"
 #include "v86clock.h"
 #include "pins_arduino.h"
-
 extern const AP_HAL::HAL& hal ;
+
+namespace x86Duino {
+extern pinsconfig PIN86[];
 
 RCOutput::RCOutput()
 {
@@ -32,14 +30,14 @@ void RCOutput::init_channel( uint8_t ch, uint8_t pin, uint16_t freq_hz, uint16_t
     mc = PIN86[pin].PWMMC;
     md = PIN86[pin].PWMMD;
     if(mc == NOPWM || md == NOPWM)  return;
-
+    
     if( freq_hz > 1600 ) freq_hz = 1600 ;
     if( freq_hz < 50 )  freq_hz = 50 ;
     CH_List[ch].freq = freq_hz ;
     CH_List[ch].period = 1000000L/freq_hz;
-
+    
     io_DisableINT();
-
+    
     mcpwm_ReloadPWM(mc, md, MCPWM_RELOAD_CANCEL);
     mcpwm_SetOutMask(mc, md, MCPWM_HMASK_NONE + MCPWM_LMASK_NONE);
     mcpwm_SetOutPolarity(mc, md, MCPWM_HPOL_NORMAL + MCPWM_LPOL_NORMAL);
@@ -47,15 +45,15 @@ void RCOutput::init_channel( uint8_t ch, uint8_t pin, uint16_t freq_hz, uint16_t
     mcpwm_ReloadOUT_Unsafe(mc, md, MCPWM_RELOAD_NOW);
     mcpwm_SetWaveform(mc, md, MCPWM_EDGE_A0I1);
     mcpwm_SetSamplCycle(mc, md, 1999L);   // no function for us
-
+    
     mcpwm_SetWidth(mc, md, CH_List[ch].period*SYSCLK, width*SYSCLK);   // cycle = 20ms -> 50hz default, 0 for no output
     mcpwm_ReloadPWM(mc, md, MCPWM_RELOAD_PEREND);
-
+    
     mcpwm_Enable(mc, md);
     io_outpb(CROSSBARBASE + 0x90 + PIN86[pin].gpN, 0x08);
-
+    
     io_RestoreINT();
-
+    
     CH_List[ch].pin = pin ;
     CH_List[ch].width = width ;
     CH_List[ch].enable = true ;
@@ -66,10 +64,10 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     // limit frequency between 50~1600 hz
     if( freq_hz > 1600 ) freq_hz = 1600 ;
     if( freq_hz < 50 )  freq_hz = 50 ;
-
+    
     uint32_t period = 1000000L/freq_hz ; // in us
     int mc, md;
-
+    
     io_DisableINT();
     for( int i = 0 ; i < PWM_MAX_CH ; i++ )
     {
@@ -85,7 +83,7 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         }
     }
     io_RestoreINT();
-
+    
 }
 
 uint16_t RCOutput::get_freq(uint8_t ch) {
@@ -106,11 +104,11 @@ void RCOutput::disable_ch(uint8_t ch)
     int mc, md;
     mc = PIN86[CH_List[ch].pin].PWMMC;
     md = PIN86[CH_List[ch].pin].PWMMD;
-
+    
     io_DisableINT();
     mcpwm_Disable(mc, md);  // stop MCM
     io_RestoreINT();
-
+    
     CH_List[ch].enable = false;
 }
 
@@ -127,7 +125,7 @@ void RCOutput::PWM_output(uint8_t ch)
     int mc, md;
     mc = PIN86[CH_List[ch].pin].PWMMC;
     md = PIN86[CH_List[ch].pin].PWMMD;
-
+    
     io_DisableINT();
     if(mcpwm_ReadReloadPWM(mc, md) != 0) mcpwm_ReloadPWM(mc, md, MCPWM_RELOAD_CANCEL);
     mcpwm_SetWidth(mc, md, CH_List[ch].period*SYSCLK, CH_List[ch].width*SYSCLK);   // cycle = 20ms -> 50hz default, 0 for no output
@@ -169,5 +167,7 @@ void RCOutput::force_safety_off(void) { _safty_on = false; }
 
 void RCOutput::set_output_mode(enum output_mode mode)
 {
+    
+}
 
 }

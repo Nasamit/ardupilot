@@ -1,15 +1,14 @@
 #include <AP_HAL/AP_HAL.h>
-
 #include <string.h>
 #include <errno.h>
-
 #include "Storage.h"
 
-using namespace x86Duino;
+extern const AP_HAL::HAL& hal;
+
+namespace x86Duino {
+
 using namespace std;
 #define MTD_PARAMS_FILE "PARM.bin"
-
-extern const AP_HAL::HAL& hal;
 
 Storage::Storage()
 {
@@ -19,7 +18,6 @@ Storage::Storage()
 void Storage::init()
 {
     _check_file();
-//    _init_file();
 }
 
 void Storage::_storage_open(void)
@@ -29,7 +27,6 @@ void Storage::_storage_open(void)
     _dirty_mask.clearall();
     _mtd_load();
     _initialised = true;
-    hal.uartB->printf("storage opend\n");
 }
 
 /*
@@ -75,13 +72,10 @@ void Storage::_timer_tick(void)
     if (!_initialised || _dirty_mask.empty()) {
         return;
     }
-//    perf_begin(_perf_storage);
 
     if (_file == nullptr) {
         _file = fopen(MTD_PARAMS_FILE, "rb+");
         if (_file == nullptr) {
-//            perf_end(_perf_storage);
-//            perf_count(_perf_errors);
             return;
         }
     }
@@ -95,15 +89,12 @@ void Storage::_timer_tick(void)
     }
     if (i == X86_STORAGE_NUM_LINES) {
         // this shouldn't be possible
-//        perf_end(_perf_storage);
-//        perf_count(_perf_errors);
         return;
     }
 
     // save to storage backend
     _mtd_write(i);
 
-//    perf_end(_perf_storage);
 }
 
 /*
@@ -127,7 +118,6 @@ void Storage::_mtd_write(uint16_t line)
         _dirty_mask.set(line);
         fclose(_file);
         _file = nullptr;
-//        perf_count(_perf_errors);
     }
 
     // !!! not sure about the time consumption
@@ -151,7 +141,7 @@ void Storage::_mtd_load(void)
     memset( _buffer, 0 , sizeof(_buffer));
     ssize_t ret = fread(_buffer, 1, sizeof(_buffer), file);
     if (ret != HAL_STORAGE_SIZE) {
-        hal.uartB->printf("Failed to read " MTD_PARAMS_FILE "\n");
+        printf("Failed to read " MTD_PARAMS_FILE "\n");
     }
 
     fclose(file);
@@ -173,7 +163,6 @@ void Storage::_check_file()
     int size = ftell(file);
     if( size != HAL_STORAGE_SIZE)
     {
-        hal.uartB->printf("wrong PARM size, %d\n",size);
         fclose( file );
         _init_file();
     }
@@ -182,13 +171,12 @@ void Storage::_check_file()
 
 void Storage::_init_file( )
 {
-    hal.uartB->printf("new parm file\n");
     FILE *file ;
     file = fopen(MTD_PARAMS_FILE, "wb");
     memset( _buffer, 0 , sizeof(_buffer));  // reset buffer
     ssize_t ret = fwrite(_buffer, 1, sizeof(_buffer), file);
     if( ret != HAL_STORAGE_SIZE )
-        hal.uartB->printf("init file error\n");
+        printf("init file error\n");
     fflush(_file);  // flush buffer to OS buffer
     fclose(file);
     
@@ -196,9 +184,9 @@ void Storage::_init_file( )
     file = fopen(MTD_PARAMS_FILE, "rb");
     const uint16_t chunk_size = 128;
     for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
-        ssize_t ret = fread(&_buffer[ofs], 1 , chunk_size, file);
+        ret = fread(&_buffer[ofs], 1 , chunk_size, file);
         if (ret != chunk_size) {
-            hal.uartB->printf("storage read of %u bytes at %u to %p failed - got %d \n",
+            printf("storage read of %u bytes at %u to %p failed - got %d \n",
                      (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret);
         }
     }
@@ -208,8 +196,10 @@ void Storage::_init_file( )
     memset( _buffer, 0 , sizeof(_buffer));
     ret = fread(_buffer, 1, sizeof(_buffer), file);
     if (ret != HAL_STORAGE_SIZE) {
-        hal.uartB->printf("Failed to read at a time\n");
+        printf("Failed to read at a time\n");
     }
     fclose(file);
-    hal.uartB->printf("size check done\n");
+    printf("size check done\n");
+}
+
 }

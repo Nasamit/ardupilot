@@ -24,8 +24,6 @@ private:
     void _mark_dirty(uint16_t loc, uint16_t length);
     uint8_t _buffer[HAL_STORAGE_SIZE] __attribute__((aligned(4)));
     Bitmask _dirty_mask{X86_STORAGE_NUM_LINES};
-//    perf_counter_t  _perf_storage;
-//    perf_counter_t  _perf_errors;
     void _mtd_load(void);
     void _mtd_write(uint16_t line);
     void _init_file();
