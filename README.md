@@ -1,118 +1,40 @@
-# ArduPilot Project
+# Ardupilot on 86Duino One #
+This ported Ardupilot is version 3.6 dev. (2017.09.15)
+The Ardupilot flight stack is modified to run on DuinOS?(FreeDOS)
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ArduPilot/ardupilot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# Requirements #
+1. a DuinOS SD card (http://www.86duino.com/index.php?p=11878)
+2. 9-axis IMU, Barometers (Recommend GY-91 sensor module)
+3. 6 channel RC Transmitter/Receiver
+4. GPS module (optional)
 
-[![Build SemaphoreCI](https://semaphoreci.com/api/v1/projects/4d28a40d-b6a6-4bfb-9780-95d92aabb178/667563/badge.svg)](https://semaphoreci.com/diydrones/ardupilot)
+# Supported hardware
+GY-86 sensor module (I2C, MPU6050, MS5611, HMC5883L)
+GY-91 sensor module (SPI, MPU9250 [pin.9], BMP280 [pin.8])
+VL53L0X range finder (I2C)
+Ublox-M8N GPS module (UART)
+6-CH RC receiver(PWM)
 
-[![Build Travis](https://travis-ci.org/ArduPilot/ardupilot.svg?branch=master)](https://travis-ci.org/ArduPilot/ardupilot)
+# (Windows) Build ArduPilot for 86duino #
+Only ArduCopter had been tested on 86duino One.
 
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/5331/badge.svg)](https://scan.coverity.com/projects/ardupilot-ardupilot)
+1. Download the toolchain (url)
+2. Run Ardupilot.bat (for setup environment)
+3. Navigate to the ArduCopter source code folder (eg. C:\86ardupilot\ArduCopter\)
+4. run "make 86duino –j4"
 
-## The ArduPilot project is made up of: ##
+First time installation:
+Copy ArduCopter.exe (in ArduCopter folder) into the SD card, then rename it to _86duino.exe (replace the original one).
+	
+Upload firmware by usb connection(for developer):
+2. Run Ardupilot.bat
+3. Navigate to the Tools folder (eg. C:\86ardupilot\Tools\)
+2. run "upx ..\..\ArduCopter\ArduCopter.exe"
+3. run "v86dude com'N' 20 ..\..\ArduCopter\ArduCopter.exe standalone" ('N' is the usb comport number)
 
-- ArduCopter (or APM:Copter) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](http://ardupilot.org/copter/index.html)
+# Setup Ardupilot #
+Same as other ardupilot flight controller, please refer the official tutorial
+http://ardupilot.org/copter/docs/configuring-hardware.html
 
-- ArduPlane (or APM:Plane) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduPlane), [wiki](http://ardupilot.org/plane/index.html)
-
-- ArduRover (or APMrover2) : [code](https://github.com/ArduPilot/ardupilot/tree/master/APMrover2), [wiki](http://ardupilot.org/rover/index.html)
-
-- ArduSub (or APM:Sub) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduSub), [wiki](http://ardusub.com/)
-
-- Antenna Tracker : [code](https://github.com/ArduPilot/ardupilot/tree/master/AntennaTracker), [wiki](http://ardupilot.org/antennatracker/index.html)
-
-## User Support & Discussion Forums ##
-
-- Support Forum: <http://discuss.ardupilot.org/>
-
-- Community Site: <http://ardupilot.org>
-
-## Developer Information ##
-
-- Github repository: <https://github.com/ArduPilot/ardupilot>
-
-- Main developer wiki: <http://dev.ardupilot.org>
-
-- Developer discussion: <http://discuss.ardupilot.org>
-
-- Developer email group: drones-discuss@googlegroups.com. Deprecated November 2016. Included for historical reference.
-
-## Contributors ##
-
-- [Github statistics](https://github.com/ArduPilot/ardupilot/graphs/contributors)
-
-## How To Get Involved ##
-
-- The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](http://dev.ardupilot.org/wiki/guidelines-for-contributors-to-the-apm-codebase)
-
-- We have an active group of Beta Testers especially for ArduCopter to help us find bugs: [release procedures](http://dev.ardupilot.org/wiki/release-procedures)
-
-- Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/ArduPilot/ardupilot/issues).
-
-- Helping other users with log analysis on [http://discuss.ardupilot.org/](http://discuss.ardupilot.org/) is always appreciated:
-
-- There is a group of wiki editors as well in case documentation is your thing: <ardu-wiki-editors@googlegroups.com>
-
-- Developer discussions occur on <drones-discuss@google-groups.com>
-
-## License ##
-
-The ArduPilot project is licensed under the GNU General Public
-License, version 3.
-
-- [Overview of license](http://dev.ardupilot.com/wiki/license-gplv3)
-
-- [Full Text](https://github.com/ArduPilot/ardupilot/blob/master/COPYING.txt)
-
-## Maintainers ##
-
-Ardupilot is comprised of several parts, vehicles and boards. The list below
-contains the people that regularly contribute to the project and are responsible
-for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more information.
-
-- [Andrew Tridgell](https://github.com/tridge)
-  - ***Vehicle***: Plane, AntennaTracker
-  - ***Board***: APM1, APM2, Pixhawk, Pixhawk2, PixRacer
-- [Randy Mackay](https://github.com/rmackay9)
-  - ***Vehicle***: Copter, AntennaTracker
-- [Robert Lefebvre](https://github.com/R-Lefebvre)
-  - ***Vehicle***: TradHeli
-- [Grant Morphett](https://github.com/gmorph):
-  - ***Vehicle***: Rover
-- [Tom Pittenger](https://github.com/magicrub)
-  - ***Vehicle***: Plane
-- [Paul Riseborough](https://github.com/priseborough)
-  - ***Subsystem***: AP_NavEKF2
-  - ***Subsystem***: AP_NavEKF3
-- [Lucas De Marchi](https://github.com/lucasdemarchi)
-  - ***Subsystem***: Linux
-- [Peter Barker](https://github.com/peterbarker)
-  - ***Subsystem***: DataFlash
-  - ***Subsystem***: Tools
-- [Michael du Breuil](https://github.com/WickedShell)
-  - ***Subsystem***: SMBus Batteries
-  - ***Subsystem***: GPS
-- [Francisco Ferreira](https://github.com/oxinarf)
-  - ***Bug Master***
-- [Matthias Badaire](https://github.com/badzz)
-  - ***Subsystem***: FRSky
-- [Eugene Shamaev](https://github.com/EShamaev)
-  - ***Subsystem***: CAN bus
-  - ***Subsystem***: UAVCAN
-- [Víctor Mayoral Vilches](https://github.com/vmayoral)
-  - ***Board***: PXF, Erle-Brain 2, PXFmini
-- [Mirko Denecke](https://github.com/mirkix)
-  - ***Board***: BBBmini, BeagleBone Blue
-- [Georgii Staroselskii](https://github.com/staroselskii)
-  - ***Board***: NavIO
-- [Emile Castelnuovo](https://github.com/emilecastelnuovo)
-  - ***Board***: VRBrain
-- [Julien BERAUD](https://github.com/jberaud)
-  - ***Board***: Bebop & Bebop 2
-- [Matt Lawrence](https://github.com/Pedals2Paddles)
-  - ***Vehicle***: 3DR Solo & Solo based vehicles
-- [Gustavo José de Sousa](https://github.com/guludo)
-  - ***Subsystem***: Build system
-- [Craig Elder](https://github.com/CraigElder)
-  - ***Administration***: ArduPilot Technical Community Manager
-- [Jacob Walser](https://github.com/jaxxzer)
-  - ***Vehicle***: Sub
+# Known Issues #
+1. Currently the system is running in single thread, thus the SD card R/W may cause the drone crash. Strongly recommend disable the Log function.(set LOG_BACKEND_TYPE to none)
